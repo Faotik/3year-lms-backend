@@ -1,6 +1,6 @@
 services:
     mongo:
-        image: mongo:8.2
+        image: mongo:7.0
         env_file:
             - .env
         environment:
