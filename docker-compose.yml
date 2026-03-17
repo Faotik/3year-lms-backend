@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+    mongo:
+        image: mongo:8.2
+        env_file:
+            - .env
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: ${DB_USERNAME}
+            MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+        ports:
+            - ${DB_PORT}:27017
+        volumes:
+            - moodle_data:/data/db
+volumes:
+    moodle_data:
+        driver: local
