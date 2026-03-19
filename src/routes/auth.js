@@ -37,7 +37,7 @@ router.post('/login', async (req, res) => {
 
         res.cookie('accessToken', accessToken, { maxAge: 15 * 60 * 1000, httpOnly: true });
         res.cookie('refreshToken', refreshToken, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
-        res.status(200).send();
+        res.status(200).send("Login successful");
     }
     else {
         return res.status(400).send("Incorrect login credentials");
@@ -84,7 +84,7 @@ router.post('/logout', authMiddleware, async (req, res) => {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
-    res.status(200).send();
+    res.status(200).send("Logout successful");
 });
 
 module.exports = router;
