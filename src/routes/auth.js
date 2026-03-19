@@ -22,11 +22,11 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-    //Find user in db
-    const user = await User.find({ email: req.body.email });
+    //Find user in db   
+    const user = await User.findOne({ email: req.body.email });
 
     //Verify if user exist and if password is correct
-    if (user != null && bcrypt.compare(req.body.password, user.password)) {
+    if (user != null && await bcrypt.compare(req.body.password, user.password)) {
         //Create access and refresh tokens
         const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15s' });
         const refreshToken = jwt.sign({ id: user.id, role: user.role }, process.env.REFRESH_TOKEN_SECRET);
@@ -45,33 +45,40 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/refreshtoken', async (req, res) => {
-    //Find user in db
-    const user = await User.findOne({ refreshTokens: req.body.refreshToken });
-
-    //No user with such refresh token. Refresh token is invalid
-    if (user == null) {
+    //Get refresh token
+    const refreshToken = req.cookies['refreshToken'];
+    if (refreshToken == null) {
         return res.status(400).send();
     }
 
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-        //Refresh token is invalid
-        if (err != null) {
-            return res.status(400);
+    try {
+        const user = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        //Find user in db
+        const db_user = await User.findById(user.id);
+
+        //Refresh token is not longer valid
+        if (!db_user.refreshTokens.includes(refreshToken)) {
+            return res.status(400).send();
         }
 
         const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15s' });
 
         res.cookie('accessToken', accessToken, { maxAge: 15 * 60 * 1000, httpOnly: true });
+        res.cookie('refreshToken', refreshToken, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
         res.status(200).send();
-    })
+    } catch (err) {
+        //Token invalid
+        return res.status(400).send();
+    }
 });
 
 router.post('/logout', authMiddleware, async (req, res) => {
     //Find user in db
-    const user = await User.findOne({ id: req.user.id });
+    const user = await User.findById(req.user.id);
 
     //Remove refresh token from valid list
-    user.refreshTokens.remove(req.body.refreshToken);
+    user.refreshTokens = user.refreshTokens.filter(token => token !== req.body.refreshToken);
     await user.save();
 
     res.clearCookie('accessToken');
