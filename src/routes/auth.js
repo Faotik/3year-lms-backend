@@ -28,7 +28,7 @@ router.post('/login', async (req, res) => {
     //Verify if user exist and if password is correct
     if (user != null && await bcrypt.compare(req.body.password, user.password)) {
         //Create access and refresh tokens
-        const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15s' });
+        const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
         const refreshToken = jwt.sign({ id: user.id, role: user.role }, process.env.REFRESH_TOKEN_SECRET);
 
         //Add refresh token to the list of valid tokens user has
@@ -62,7 +62,7 @@ router.post('/refreshtoken', async (req, res) => {
             return res.status(400).send();
         }
 
-        const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15s' });
+        const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
 
         res.cookie('accessToken', accessToken, { maxAge: 15 * 60 * 1000, httpOnly: true });
         res.cookie('refreshToken', refreshToken, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true });
