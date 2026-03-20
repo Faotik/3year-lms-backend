@@ -3,6 +3,8 @@ const router = express.Router();
 
 const Assignment = require('../models/assignment');
 const Submission = require('../models/submission');
+const AuthMiddleware = require("../middlewares/auth");
+const ROLES = require('../constants/roles');
 
 // ============ ASSIGNMENTS ============
 /**
@@ -14,12 +16,11 @@ const Submission = require('../models/submission');
      - GET:'/course/:courseId' -> Get assignments that linked to specific course
  **/
 // Create assignment (lecturer)
-router.post('/', async (req, res) => {
+router.post('/', AuthMiddleware, async (req, res) => {
     try {
-
         // User role validation
-        if (req.user.role !== 'lecturer') {
-            return res.status(403).json({error: 'Forbidden'});
+        if (req.user.role !== ROLES.TEACHER) {
+            return res.status(403).json({error: 'Access Forbidden. You are not authorized to access this page.'});
         }
 
         // Create Assignment entity
@@ -36,11 +37,11 @@ router.post('/', async (req, res) => {
 });
 
 // Update assignment (lecturer)
-router.put('/:id', async (req, res) => {
+router.put('/:id', AuthMiddleware,async (req, res) => {
 
     // User role validation
-    if (req.user.role !== 'lecturer') {
-        return res.status(403).json({error: 'Forbidden'});
+    if (req.user.role !== ROLES.TEACHER) {
+        return res.status(403).json({error: 'Access Forbidden. You are not authorized to access this page.'});
     }
 
     // Get specific assignment -> update its body
@@ -50,17 +51,22 @@ router.put('/:id', async (req, res) => {
         {new: true}
     );
 
+    // Validation
+    if (!updated) {
+        return res.status(404).json({ error: 'Not found or not owner' });
+    }
+
     res.json(updated);
 });
 
 // Get all available assignments without any filter
-router.get('/', async (req, res) => {
+router.get('/', AuthMiddleware, async (req, res) => {
     const list = await Assignment.find();
     res.json(list)
 })
 
 // Get assignments by course
-router.get('/course/:courseId', async (req, res) => {
+router.get('/course/:courseId', AuthMiddleware, async (req, res) => {
     const list = await Assignment.find({courseId: req.params.courseId});
 
     if (!list) {
@@ -71,7 +77,7 @@ router.get('/course/:courseId', async (req, res) => {
 });
 
 // Get single assignment
-router.get('/:id', async (req, res) => {
+router.get('/:id', AuthMiddleware, async (req, res) => {
     const assignment = await Assignment.findById(req.params.id);
 
     if (!assignment) {
@@ -96,10 +102,10 @@ router.get('/:id', async (req, res) => {
  **/
 
 // Submit assignment (student)
-router.post('/:id/submissions', async (req, res) => {
+router.post('/:id/submissions',AuthMiddleware, async (req, res) => {
     try {
         // Role validation
-        if (req.user.role !== 'student') {
+        if (req.user.role !== ROLES.STUDENT) {
             return res.status(403).json({error: 'Forbidden'});
         }
 
@@ -132,10 +138,10 @@ router.post('/:id/submissions', async (req, res) => {
 });
 
 // Update submission (student)
-router.put('/:id/submissions', async (req, res) => {
+router.put('/:id/submissions',AuthMiddleware, async (req, res) => {
 
     // Validate role permissions
-    if (req.user.role !== 'student') {
+    if (req.user.role !== ROLES.STUDENT) {
         return res.status(403).json({error: 'Forbidden'});
     }
 
@@ -162,7 +168,7 @@ router.put('/:id/submissions', async (req, res) => {
 });
 
 // Get my submission (student)
-router.get('/:id/submissions/me', async (req, res) => {
+router.get('/:id/submissions/me', AuthMiddleware, async (req, res) => {
     const submission = await Submission.findOne({
         assignmentId: req.params.id,
         studentId: req.user.id
@@ -173,10 +179,10 @@ router.get('/:id/submissions/me', async (req, res) => {
 
 
 // Get all submissions (lecturer)
-router.get('/:id/submissions', async (req, res) => {
+router.get('/:id/submissions', AuthMiddleware, async (req, res) => {
 
     // Validate role permissions
-    if (req.user.role !== 'lecturer') {
+    if (req.user.role !== ROLES.TEACHER) {
         return res.status(403).json({error: 'Forbidden'});
     }
 
