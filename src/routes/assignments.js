@@ -83,15 +83,17 @@ router.get('/', AuthMiddleware, async (req, res) => {
     try {
         let assignments;
 
-        if (req.user.role !== ROLES.ADMIN) {
+        if (req.user.role === ROLES.ADMIN) {
             assignments = await Assignment.find()
-        }
 
-        if (req.user.role !== ROLES.TEACHER) {
+        } else if (req.user.role === ROLES.TEACHER) {
             assignments = await Assignment.find({ lecturerId: req.user.id });
+
         } else {
             // TODO temprorary allow all - later filter by enrolled courses
             assignments = await Assignment.find()
+
+            //assignments = await Assignment.find({ courseId: { $in: req.user.courses } })
         }
         res.json(assignments)
 
@@ -114,7 +116,7 @@ router.get('/course/:courseId', AuthMiddleware, async (req, res) => {
     }
 });
 
-// TODO
+
 // Get single assignment
 router.get('/:id', AuthMiddleware, async (req, res) => {
     try {
