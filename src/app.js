@@ -5,6 +5,7 @@ const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const assignmentRoutes = require('./routes/assignments');
+const moudlesRoutes = require('./routes/module');
 
 const app = express();
 
