@@ -14,10 +14,10 @@ app.use(cookieParser());
 
 
 // APi endpoints
-app.use('/', indexRouter);
-app.use('/auth', authRouter);
-app.use('/users', usersRouter);
-app.use('/assignments', assignmentRoutes);
-app.use('/preferences', preferencesRoutes);
+app.use('/api', indexRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/preferences', preferencesRoutes);
 
 module.exports = app;
