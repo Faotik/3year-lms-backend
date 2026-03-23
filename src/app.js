@@ -5,7 +5,7 @@ const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const assignmentRoutes = require('./routes/assignments');
-const moudlesRoutes = require('./routes/module');
+const modulesRoutes = require('./routes/modules');
 
 const app = express();
 
@@ -27,5 +27,6 @@ app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use('/users', usersRouter);
 app.use('/assignments', assignmentRoutes);
+app.use('/modules', modulesRoutes);
 
 module.exports = app;
