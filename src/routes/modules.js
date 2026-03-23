@@ -6,7 +6,7 @@ router.get('/', async (req, res) => {
     try {
         //TODO implement sections
         //const modules = await Module.find().populate('sections');
-        const module = await Module.findById(req.params.id);
+        const modules = await Module.find();
         res.json(modules);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -17,7 +17,7 @@ router.get('/:id', async (req, res) => {
     try {
         //TODO implement sections   
         //const module = await Module.findById(req.params.id).populate('sections');
-        const modules = await Module.find();
+        const module = await Module.findById(req.params.id);
         if (!module) return res.status(404).json({ message: "Module not found" });
         res.json(module);
     } catch (err) {
