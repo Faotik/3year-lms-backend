@@ -7,6 +7,7 @@ const usersRouter = require('./routes/users');
 const assignmentRoutes = require('./routes/assignments');
 const preferencesRoutes = require('./routes/preferences');
 const adminDashboard = require('./routes/adminDashboard');
+const studentDashboard = require('./routes/studentDashboard');
 
 const app = express();
 
@@ -21,5 +22,6 @@ app.use('/api/users', usersRouter);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/preferences', preferencesRoutes);
 app.use('/api/admin', adminDashboard);
+app.use('/api/student', studentDashboard);
 
 module.exports = app;
