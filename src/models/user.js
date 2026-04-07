@@ -23,10 +23,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     enum: Object.values(ROLES),
   },
-  refreshTokens: {
-    type: [String],
-  },
-  Preferences: {
+  preferences: {
     theme: {
       type: String,
       required: true,

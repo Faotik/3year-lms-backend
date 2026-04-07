@@ -7,7 +7,7 @@ const auth = require("../middlewares/auth");
 
 router.get('/theme', auth, async (req, res) => {
     try {
-        const user = await User.find();
+        const user = await User.findById(req.user.id);
         res.status(200).json({ theme: user.theme });
     } catch (err) {
         console.log("Error: " + err.message);
@@ -17,9 +17,9 @@ router.get('/theme', auth, async (req, res) => {
 
 router.post('/theme', auth, async (req, res) => {
     try {
-        const user = await User.find();
+        const user = await User.findById(req.user.id);
         try {
-            user.theme = req.body.theme;
+            user.preferences.theme = req.body.theme;
             await user.save();
             res.status(200).json({ theme: user.theme });
         }

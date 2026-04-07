@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const express = require('express');
 const cookieParser = require('cookie-parser');
 
@@ -15,6 +17,23 @@ const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+
+const session = require('express-session');
+const MongoStore = require('connect-mongo').default;
+
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: new MongoStore({
+        mongoUrl: `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?authSource=admin`
+    }),
+    cookie: {
+        maxAge: 1000 * 60 * 60,
+        secure: false,
+        httpOnly: true,
+    },
+}));
 
 
 // APi endpoints
