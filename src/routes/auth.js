@@ -8,6 +8,8 @@ const jwt = require('jsonwebtoken')
 const User = require('../models/user')
 const authMiddleware = require('../middlewares/auth');
 
+
+// TODO TEMPRORARY IMPLEMENTATION, UPON FINISHING TESTING -> TRANSFER REGISTER FEATURE TO ADMIN DASHBOARD
 router.post('/register', async (req, res) => {
     //Hash password
     const hashed_password = await bcrypt.hash(req.body.password, 10);

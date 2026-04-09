@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const User = require('../models/user');
 const Assignment = require('../models/assignment');
 const Submission = require('../models/submission');
+const Module = require('../models/module');
 
 const AuthMiddleware = require('../middlewares/auth');
 const ROLES = require('../constants/roles');
@@ -39,7 +40,7 @@ router.get('/users', AuthMiddleware, requireAdmin, async (req, res) => {
 router.put('/users/:id/role', AuthMiddleware, requireAdmin, async (req, res) => {
     try {
 
-        // User id validaton
+        // User id validation
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ error: 'Invalid ID' });
         }
@@ -113,6 +114,13 @@ router.delete('/users/:id', AuthMiddleware, requireAdmin, async (req, res) => {
 });
 
 
+// TODO Create user
+router.post('/users', AuthMiddleware, requireAdmin, async (req, res) => {
+
+})
+
+// TODO modify user permissions of what modules they can see and access
+
 // ================= ASSIGNMENTS =================
 
 // Get all assignments
@@ -155,6 +163,13 @@ router.delete('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res)
     }
 });
 
+// TODO Modify assignment
+
+/*
+* 1. Change title of assignment
+* 2. Deadline
+* 3. Content -> modify model of assignment <include title, deadline, content>
+* */
 
 // ================= SUBMISSIONS =================
 
@@ -195,5 +210,34 @@ router.delete('/submissions/:id', AuthMiddleware, requireAdmin, async (req, res)
     }
 });
 
+
+// ================= PLATFORM STATISTIC =================
+
+// Get statistic over the platform
+router.get('/statistic', AuthMiddleware, requireAdmin, async (req, res) => {
+    try{
+        const totalUserCount = await User.countDocuments();
+        const studentCount = await User.countDocuments({ role: ROLES.STUDENT });
+        const teacherCount = await User.countDocuments({role: ROLES.TEACHER});
+        const adminCount = await User.countDocuments({role: ROLES.ADMIN});
+        const moduleCount = await Module.countDocuments();
+        const assignmentCount = await Assignment.countDocuments();
+        const submissionCount = await Submission.countDocuments();
+
+        res.json({
+            users:totalUserCount,
+            student: studentCount,
+            teacher: teacherCount,
+            admin: adminCount,
+            modules: moduleCount,
+            assignments: assignmentCount,
+            submissions: submissionCount
+        });
+
+    }catch(err){
+        console.error(err);
+        res.status(500).json({ error: 'Error occured' });
+    }
+})
 
 module.exports = router;
