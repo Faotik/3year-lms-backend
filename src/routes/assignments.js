@@ -15,6 +15,7 @@ const ROLES = require('../constants/roles');
      - GET:'/:id' -> Get specific Assignment via ID
      - GET:'/course/:courseId' -> Get assignments that linked to specific course
  **/
+
 // Create assignment (lecturer)
 router.post('/', AuthMiddleware, async (req, res) => {
     try {
@@ -115,7 +116,6 @@ router.get('/course/:courseId', AuthMiddleware, async (req, res) => {
         res.status(500).json({error: 'Server error'});
     }
 });
-
 
 // Get single assignment
 router.get('/:id', AuthMiddleware, async (req, res) => {

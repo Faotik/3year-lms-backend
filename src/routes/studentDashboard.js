@@ -23,7 +23,7 @@ const requireStudent = (req, res, next) => {
 // Get assignments that are available to student
 router.get('/assignments', AuthMiddleware, requireStudent, async (req, res) => {
     try {
-        // TODO: later filter by enrolled courses
+        // TODO: later filter by enrolled modules
         const assignments = await Assignment.find();
         //  const assignments = await Assignment.find({ courseId: { $in: studentCourses } })
 
@@ -204,5 +204,9 @@ router.get('/submissions', AuthMiddleware, requireStudent, async (req, res) => {
     }
 });
 
+
+// ================= MODULES =================
+
+//TODO get all modules student enrolled
 
 module.exports = router;
