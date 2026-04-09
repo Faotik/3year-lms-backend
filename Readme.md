@@ -30,9 +30,13 @@ DB_NAME=moodle
 SERVER_PORT=5000
 ACCESS_TOKEN_SECRET=secret
 REFRESH_TOKEN_SECRET=secret
+SESSION_SECRET=secret
 ```
-
-To get ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET, use this:
+<strong>
+Warning: ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET are deprecated. We use now session based authetication insetead of jwt token
+</strong>
+<br>
+<s> To get ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET, use this: 
 
 ```bash
 # Create hex tokens, one value for 
@@ -41,8 +45,10 @@ require('crypto').randomBytes(64).toString('hex')
 require('crypto').randomBytes(64).toString('hex')
 ```
 Copy values and paste to ACCESS_TOKEN_SECRET followed by REFRESH_TOKEN_SECRET.
+</s>
+<br> To get autication working, you need to implement field SESSION_SECRET with secure key to represent sessionID. https://secretkeygen.vercel.app/ as an option to generate such key
 
-The final .env file should look like this:
+<br>The final .env file should look like this:
 ```bash
 DB_USERNAME=mongouser
 DB_PASSWORD=mongopass
@@ -50,8 +56,7 @@ DB_HOST=localhost
 DB_PORT=27017
 DB_NAME=moodle
 SERVER_PORT=5000
-ACCESS_TOKEN_SECRET=167c219db837f5d0a885f3c4a95fce6bb8875eaf9c7e30cbc93619995187374ab4a04428f29ed30dbb9ef62bf75cb4503e51918a814bacfdbdd23521b5348b84
-REFRESH_TOKEN_SECRET=d45f3e53a3bd7ca673871efb2bf4d6da59cf3cc65653c8ab1f8851dbd9c6c5e7139b161f1aa844f2ddaab0bfb8361b327d25cf8d2211b75aadc105eb3ff8ab2e
+SESSION_SECRET=63f4945d921d599f27ae4fdf5bada3f1
 ```
 
 ### Starting Backend
