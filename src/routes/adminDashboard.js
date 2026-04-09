@@ -114,7 +114,7 @@ router.delete('/users/:id', AuthMiddleware, requireAdmin, async (req, res) => {
 });
 
 
-// TODO Create user
+// TODO Create user <expected  from the auth/register>
 router.post('/users', AuthMiddleware, requireAdmin, async (req, res) => {
 
 })
@@ -163,14 +163,74 @@ router.delete('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res)
     }
 });
 
-// TODO Modify assignment
 
-/*
-* 1. Change title of assignment
-* 2. Deadline
-* 3. Content -> modify model of assignment <include title, deadline, content>
-* */
+router.put('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res) => {
+    try {
+        // Validate Mongo ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid assignment ID' });
+        }
 
+        const { title, deadline, description } = req.body;
+
+        // Build safe update object (whitelist only)
+        const updates = {};
+
+        // Update title if provided
+        if (title) {
+            if (typeof title !== 'string' || title.trim().length === 0) {
+                return res.status(400).json({ error: 'Invalid title' });
+            }
+
+            updates.title = title.trim();
+        }
+
+        // Update deadline if provided
+        if (deadline) {
+            const parsedDeadline = new Date(deadline);
+
+            if (isNaN(parsedDeadline.getTime())) {
+                return res.status(400).json({ error: 'Invalid deadline' });
+            }
+
+            updates.deadline = parsedDeadline;
+        }
+
+        // Update description if provided
+        if (description) {
+            if (typeof description !== 'string') {
+                return res.status(400).json({ error: 'Invalid description' });
+            }
+
+            updates.description = description.trim();
+        }
+
+        // Ensure at least one field is being updated
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided' });
+        }
+
+        const updatedAssignment = await Assignment.findByIdAndUpdate(
+            req.params.id,
+            updates,
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        // Check assignment exists
+        if (!updatedAssignment) {
+            return res.status(404).json({ error: 'Assignment not found' });
+        }
+
+        res.json(updatedAssignment);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+  });
 // ================= SUBMISSIONS =================
 
 // Get all submissions
