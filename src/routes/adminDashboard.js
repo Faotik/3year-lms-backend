@@ -12,18 +12,9 @@ const ROLES = require('../constants/roles');
 const bcrypt = require("bcrypt");
 
 
-// Admin rights validation
-const requireAdmin = (req, res, next) => {
-    if (req.user.role !== ROLES.ADMIN) {
-        return res.status(403).json({ error: 'Admin only' });
-    }
-    next();
-};
-
-
 // Create new user, assign its password, email, name and role
 router.post('/createUser', async (req, res) => {
-    try{
+    try {
         //Hash password
         const hashed_password = await bcrypt.hash(req.body.password, 10);
         //Add user to db
@@ -34,7 +25,7 @@ router.post('/createUser', async (req, res) => {
             role: req.body.role,
         });
         res.status(200).json({ name: user.name, email: user.email, role: user.role });
-    }catch (err){
+    } catch (err) {
         console.error(err);
         res.status(400).json({ error: 'Bad request' });
     }
@@ -246,7 +237,7 @@ router.put('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res) =>
         console.error(err);
         res.status(500).json({ error: 'Server error' });
     }
-  });
+});
 
 
 // ================= SUBMISSIONS =================
@@ -293,17 +284,17 @@ router.delete('/submissions/:id', AuthMiddleware, requireAdmin, async (req, res)
 
 // Get statistic over the platform
 router.get('/statistic', AuthMiddleware, requireAdmin, async (req, res) => {
-    try{
+    try {
         const totalUserCount = await User.countDocuments();
         const studentCount = await User.countDocuments({ role: ROLES.STUDENT });
-        const teacherCount = await User.countDocuments({role: ROLES.TEACHER});
-        const adminCount = await User.countDocuments({role: ROLES.ADMIN});
+        const teacherCount = await User.countDocuments({ role: ROLES.TEACHER });
+        const adminCount = await User.countDocuments({ role: ROLES.ADMIN });
         const moduleCount = await Module.countDocuments();
         const assignmentCount = await Assignment.countDocuments();
         const submissionCount = await Submission.countDocuments();
 
         res.json({
-            users:totalUserCount,
+            users: totalUserCount,
             student: studentCount,
             teacher: teacherCount,
             admin: adminCount,
@@ -312,7 +303,7 @@ router.get('/statistic', AuthMiddleware, requireAdmin, async (req, res) => {
             submissions: submissionCount
         });
 
-    }catch(err){
+    } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error occured' });
     }
