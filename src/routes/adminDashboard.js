@@ -9,6 +9,7 @@ const Module = require('../models/module');
 
 const AuthMiddleware = require('../middlewares/auth');
 const ROLES = require('../constants/roles');
+const bcrypt = require("bcrypt");
 
 
 // Admin rights validation
@@ -20,7 +21,26 @@ const requireAdmin = (req, res, next) => {
 };
 
 
-// =========== USERS ===========
+// Create new user, assign its password, email, name and role
+router.post('/createUser', async (req, res) => {
+    try{
+        //Hash password
+        const hashed_password = await bcrypt.hash(req.body.password, 10);
+        //Add user to db
+        const user = await User.create({
+            name: req.body.name,
+            email: req.body.email,
+            password: hashed_password,
+            role: req.body.role,
+        });
+        res.status(200).json({ name: user.name, email: user.email, role: user.role });
+    }catch (err){
+        console.error(err);
+        res.status(400).json({ error: 'Bad request' });
+    }
+
+})
+
 
 // Get all users
 router.get('/users', AuthMiddleware, requireAdmin, async (req, res) => {
@@ -114,11 +134,6 @@ router.delete('/users/:id', AuthMiddleware, requireAdmin, async (req, res) => {
 });
 
 
-// TODO Create user <expected  from the auth/register>
-router.post('/users', AuthMiddleware, requireAdmin, async (req, res) => {
-
-})
-
 // TODO modify user permissions of what modules they can see and access
 
 // ================= ASSIGNMENTS =================
@@ -164,6 +179,7 @@ router.delete('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res)
 });
 
 
+// Update assignment fields
 router.put('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res) => {
     try {
         // Validate Mongo ID
@@ -231,6 +247,8 @@ router.put('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res) =>
         res.status(500).json({ error: 'Server error' });
     }
   });
+
+
 // ================= SUBMISSIONS =================
 
 // Get all submissions
