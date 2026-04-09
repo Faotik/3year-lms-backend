@@ -5,7 +5,6 @@ const moduleSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-
     sections: [
         {
             type: mongoose.Schema.Types.ObjectId,

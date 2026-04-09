@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 
 const User = require('../models/user')
+
 //GET TODO
 router.get('/:id', async (req, res) => {
   try {
@@ -13,6 +14,7 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 //POST TODO
 router.post('/', async (req, res) => {
   const { name, email, password, role } = req.body;
@@ -37,6 +39,7 @@ router.post('/', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 //PUT TODO
 router.put('/:id', async (req, res) => {
   try {
@@ -55,6 +58,7 @@ router.put('/:id', async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 });
+
 //DELETE TODO
 router.delete('/:id', async (req, res) => {
   try {
@@ -66,4 +70,5 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 module.exports = router;
