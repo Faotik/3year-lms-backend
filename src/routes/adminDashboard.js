@@ -14,7 +14,7 @@ const bcrypt = require("bcrypt");
 // ================= PLATFORM STATISTIC =================
 
 // Get statistic over the platform
-router.get('/statistic', AuthMiddleware, requireAdmin, async (req, res) => {
+router.get('/statistic', authMiddleware([ROLES.ADMIN]), async (req, res) => {
     try {
         const totalUserCount = await User.countDocuments();
         const studentCount = await User.countDocuments({ role: ROLES.STUDENT });

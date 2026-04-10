@@ -258,7 +258,7 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
 });
 
 // Submit assignment (student)
-router.post('/:id/submissions', AuthMiddleware, async (req, res) => {
+router.post('/:id/submissions', authMiddleware(), async (req, res) => {
     try {
         // Role validation
         if (req.user.role !== ROLES.STUDENT) {
@@ -305,7 +305,7 @@ router.post('/:id/submissions', AuthMiddleware, async (req, res) => {
 });
 
 // Update submission (student)
-router.put('/:id/submissions', AuthMiddleware, async (req, res) => {
+router.put('/:id/submissions', authMiddleware(), async (req, res) => {
     try {
         // Validate role permissions
         if (req.user.role !== ROLES.STUDENT) {
