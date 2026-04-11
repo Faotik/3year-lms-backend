@@ -4,7 +4,8 @@ const bcrypt = require('bcrypt');
 
 const app = require("../app");
 const ROLES = require("../constants/roles");
-const User = require('../models/user')
+const User = require('../models/user');
+const Module = require('../models/module');
 
 //Connect to db
 beforeAll(async () => {
@@ -26,17 +27,29 @@ beforeEach(async () => {
         { name: "Teacher2", email: "email4@email.com", password: "1", role: ROLES.TEACHER },
         { name: "Admin1", email: "email5@email.com", password: "1", role: ROLES.ADMIN },
     ];
+    let db_users = [];
     for (const user of users) {
         //Hash password
         const hashed_password = await bcrypt.hash(user.password, 10);
         //Add user to db
-        await User.create({
+        db_users.push(await User.create({
             name: user.name,
             email: user.email,
             password: hashed_password,
             role: user.role,
-        });
+        }));
     }
+
+    await Module.create({
+        title: "Module 1",
+        description: "Desc 1",
+        users: [db_users[0].id],
+    });
+    await Module.create({
+        title: "Module 2",
+        description: "Desc 2",
+        users: [db_users[1].id],
+    });
 });
 
 //Close db
@@ -455,8 +468,254 @@ describe("/api", () => {
 
                 expect(res.statusCode).toBe(200);
 
-                const deleted_user = await User.findOne({ email: "email1@email.com" });
+                const deleted_user = await User.findById(user.id);
+                expect(deleted_user).toBeNull();
+            });
+        })
+    })
+    describe("/modules", () => {
+        describe("GET /", () => {
+            it("should fail to get all modules without login", async () => {
+                let route = request.agent(app);
 
+                const res = await route
+                    .get("/api/modules");
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should succeed to get all user's modules", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+
+                const res = await route
+                    .get("/api/modules");
+
+                expect(res.statusCode).toBe(200);
+                expect(Array.isArray(res.body)).toBe(true);
+                expect(res.body.length).toBe(1);
+            });
+            it("should succeed to get all modules by admin", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .get("/api/modules");
+
+                expect(res.statusCode).toBe(200);
+                expect(Array.isArray(res.body)).toBe(true);
+                expect(res.body.length).toBe(2);
+            });
+        })
+        describe("GET /:id", () => {
+            it("should fail to get module without login", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne();
+
+                const res = await route
+                    .get(`/api/modules/${module.id}`);
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to get module with incorrect id", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route
+                    .get("/api/modules/-1");
+
+                expect(res.statusCode).toBe(404);
+            });
+            it("should fail to get module if user doesn't has access", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne({ title: "Module 2" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route.get(`/api/modules/${module.id}`);
+
+                expect(res.statusCode).toBe(404);
+            });
+            it("should succeed to get module if user has access", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne({ title: "Module 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route.get(`/api/modules/${module.id}`);
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body.title).toBe("Module 1");
+            });
+        })
+        describe("POST /", () => {
+            it("should fail to create module without login", async () => {
+                let route = request.agent(app);
+
+                const res = await route
+                    .post("/api/modules")
+                    .send({ title: "New Module", description: "New Desc" });
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to create module without admin role", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+
+                const res = await route
+                    .post("/api/modules")
+                    .send({ title: "New Module", description: "New Desc" });
+
+                expect(res.statusCode).toBe(403);
+            });
+            it("should fail to create module without title", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .post("/api/modules")
+                    .send({ description: "New Desc" });
+
+                expect(res.statusCode).toBe(400);
+            });
+            it("should succeed to create module", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .post("/api/modules")
+                    .send({ title: "New Module", description: "New Desc" });
+
+                expect(res.statusCode).toBe(201);
+                expect(res.body).toBeDefined();
+                expect(res.body.title).toBe("New Module");
+                expect(res.body.description).toBe("New Desc");
+            });
+        })
+        describe("PUT /:id", () => {
+            it("should fail to update module without login", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne({ title: "Module 1" });
+
+                const res = await route
+                    .put(`/api/modules/${module.id}`)
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to update user without admin role", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne({ title: "Module 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route
+                    .put(`/api/modules/${module.id}`)
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(403);
+            });
+            it("should fail to update module with incorrect id", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+
+                const res = await route
+                    .put("/api/modules/-1")
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(404);
+            });
+            it("should succeed to update module", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne({ title: "Module 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .put(`/api/modules/${module.id}`)
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body).toBeDefined();
+                expect(res.body.title).toBe("NewTitle");
+                expect(res.body.description).toBe(module.description);
+            });
+        })
+        describe("DELETE /:id", () => {
+            it("should fail to delete module without login", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne({ title: "Module 1" });
+
+                const res = await route
+                    .delete(`/api/modules/${module.id}`);
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to delete user without admin role", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne({ title: "Module 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route
+                    .delete(`/api/modules/${module.id}`);
+
+                expect(res.statusCode).toBe(403);
+            });
+            it("should fail to delete module with incorrect id", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .delete("/api/modules/-1");
+
+                expect(res.statusCode).toBe(404);
+            });
+            it("should succeed to delete module", async () => {
+                let route = request.agent(app);
+
+                const module = await Module.findOne({ title: "Module 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .delete(`/api/modules/${module.id}`);
+
+                expect(res.statusCode).toBe(200);
+
+                const deleted_user = await User.findById(module.id);
                 expect(deleted_user).toBeNull();
             });
         })
