@@ -19,15 +19,15 @@ router.post('/login', async (req, res) => {
         res.status(200).send("Login successful");
     }
     else {
-        return res.status(400).send("Incorrect login credentials");
+        return res.status(401).send("Incorrect login credentials");
     }
 });
 
-router.post('/logout', authMiddleware, async (req, res) => {
+router.post('/logout', authMiddleware(), async (req, res) => {
     //Logout
-    req.session.user = null;
-
-    res.status(200).send("Logout successful");
+    req.session.destroy(() => {
+        res.status(200).json({ message: "Logout successful" });
+    });
 });
 
 module.exports = router;

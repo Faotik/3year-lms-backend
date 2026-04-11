@@ -6,10 +6,9 @@ const app = require("../app");
 const ROLES = require("../constants/roles");
 const User = require('../models/user')
 
-
 //Connect to db
 beforeAll(async () => {
-    mongoose.connect(`mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?authSource=admin`);
+    await mongoose.connect(`mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?authSource=admin`);
 });
 
 beforeEach(async () => {
@@ -27,7 +26,6 @@ beforeEach(async () => {
         { name: "Teacher2", email: "email4@email.com", password: "1", role: ROLES.TEACHER },
         { name: "Admin1", email: "email5@email.com", password: "1", role: ROLES.ADMIN },
     ];
-
     for (const user of users) {
         //Hash password
         const hashed_password = await bcrypt.hash(user.password, 10);
@@ -47,9 +45,53 @@ afterAll(async () => {
     await mongoose.disconnect();
 });
 
-describe("/api", () =>
-    describe("/users", () =>
-        describe("GET", () => {
+describe("/api", () => {
+    describe("/auth", () => {
+        describe("POST /login", () => {
+            it("should fail to login with wrong password", async () => {
+                const route = request.agent(app);
+
+                const res = await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "2" });
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should succeed to login", async () => {
+                const route = request.agent(app);
+
+                const res = await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+
+                expect(res.statusCode).toBe(200);
+            });
+        })
+        describe("POST /logout", () => {
+            it("should fail to logout without login first", async () => {
+                let route = request.agent(app);
+
+                const res = await route
+                    .post("/api/auth/logout");
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should succeed to logout", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+
+                const res = await route
+                    .post("/api/auth/logout").send({});
+
+                expect(res.statusCode).toBe(200);
+            });
+        })
+    })
+    describe("/users", () => {
+        describe("GET /", () => {
             it("should fail to get all users without login", async () => {
                 let route = request.agent(app);
 
@@ -69,13 +111,12 @@ describe("/api", () =>
 
                 expect(res.statusCode).toBe(403);
             });
-            it("should succeed", async () => {
+            it("should succeed to get all users", async () => {
                 let route = request.agent(app);
 
-                const log_req = await route
+                await route
                     .post("/api/auth/login")
                     .send({ email: "email5@email.com", password: "1" });
-                console.log(log_req.headers);
                 const res = await route
                     .get("/api/users");
 
@@ -83,5 +124,5 @@ describe("/api", () =>
                 expect(res.body).toBeDefined();
             });
         })
-    )
-);
+    })
+});
