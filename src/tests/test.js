@@ -8,7 +8,7 @@ const User = require('../models/user')
 
 //Connect to db
 beforeAll(async () => {
-    await mongoose.connect(`mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?authSource=admin`);
+    await mongoose.connect(`mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME_TEST}?authSource=admin`);
 });
 
 beforeEach(async () => {
