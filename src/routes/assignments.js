@@ -155,22 +155,27 @@ router.get('/', authMiddleware(), async (req, res) => {
 // });
 
 // Delete assignment
-// todo broken enpoint
-router.delete('/assignments/:id', authMiddleware(), async (req, res) => {
+router.delete('/:id', authMiddleware(), async (req, res) => {
     try {
         // id format validation
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ error: 'Invalid ID' });
         }
 
-        const deleted = await Assignment.findByIdAndDelete(req.params.id);
+        let deleted;
+        if (req.user.role === ROLES.ADMIN) {
+            deleted = await Assignment.findOneAndDelete({ _id: req.params.id });
+        } else {
+            deleted = await Assignment.findOneAndDelete({
+                _id: req.params.id,
+                lecturerId: req.user.id
+            });
+        }
 
-        // check assignment existence in system
         if (!deleted) {
             return res.status(404).json({ error: 'Assignment not found' });
         }
 
-        // remove all submissions linked to assignment
         await Submission.deleteMany({ assignmentId: req.params.id });
 
         res.json({ message: 'Assignment deleted' });

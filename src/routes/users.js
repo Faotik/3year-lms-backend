@@ -58,7 +58,7 @@ router.post('/', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 })
 
 //Update specific user infomation
-router.put('/:id', authMiddleware(), async (req, res) => {
+router.put('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 	try {
 		if (req.params.id === req.user.id || req.user.role === ROLES.ADMIN) {
 			const { name, email, password, role } = req.body;
