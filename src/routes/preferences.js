@@ -3,9 +3,10 @@ const express = require('express');
 const router = express.Router();
 
 const User = require('../models/user');
-const auth = require("../middlewares/auth");
+const authMiddleware = require('../middlewares/auth');
+const ROLES = require('../constants/roles');
 
-router.get('/theme', auth, async (req, res) => {
+router.get('/theme', authMiddleware(), async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         res.status(200).json({ theme: user.theme });
@@ -15,7 +16,7 @@ router.get('/theme', auth, async (req, res) => {
     }
 });
 
-router.post('/theme', auth, async (req, res) => {
+router.post('/theme', authMiddleware(), async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         try {
