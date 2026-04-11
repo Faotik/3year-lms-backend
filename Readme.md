@@ -101,37 +101,650 @@ docker compose up
 
 ```text
 3year-moodle-backend/
-│
-├─src/
-│   ├── models/     Mongoose models
-│   ├── routes/     Routes + logic
-│
-│
-├── app.js          # Express app entry
-├── server.js       # Development server
-├── package.json
-└── README.md
-```
-```text
-models - hold boiler plates of expected JSON formats for every data pieces
-routes - hold APi endpoints with logic in monolith format
+├── src/
+│   ├── app.js                    # Express app configuration and route mounting
+│   ├── server.js                 # MongoDB connection + HTTP server startup
+│   ├── constants/
+│   │   ├── roles.js              # Role enum: student | teacher | admin
+│   │   └── themes.js             # Theme enum: light | dark
+│   ├── middlewares/
+│   │   └── auth.js               # Session authentication middleware
+│   ├── models/
+│   │   ├── user.js               # User schema (role, credentials, preferences)
+│   │   ├── assignment.js         # Assignment schema (courseId, lecturerId, deadline)
+│   │   ├── submission.js         # Submission schema (assignmentId, studentId, content)
+│   │   └── module.js             # Learning module schema
+│   └── routes/
+│       ├── index.js              # Health/root route
+│       ├── auth.js               # Register, login, logout
+│       ├── users.js              # User CRUD endpoints
+│       ├── assignments.js        # Generic assignment + submission endpoints
+│       ├── preferences.js        # Theme preferences
+│       ├── adminDashboard.js     # Admin-only management routes
+│       ├── studentDashboard.js   # Student-only dashboard routes
+│       ├── teacherDashboard.js   # Teacher-only dashboard routes
+│       ├── modules.js            # Module CRUD endpoints
+│       └── calendar.js           # Calendar/event endpoints from assignments
+├── .env.template                 # Environment variable template
+├── docker-compose.yml            # MongoDB service for local development
+├── package.json                  # NPM scripts and dependencies
+└── Readme.md
 ```
 ***
 
-## Request Structure
-Each Request model described in ```models/``` directory, however the model of is not present there.
+## Architecture and Request Lifecycle
 
-For ```auth/register``` endpoint, request structure is
-```JSON
-"name": "string",
-"email": "string",
-"password": "string",
-"role": "string",
+- `src/server.js` starts the process and connects to MongoDB.
+- `src/app.js` builds Express middleware stack (`express.json`, cookies, sessions) and mounts all `/api/*` routers.
+- Incoming HTTP requests are handled in `src/routes/*`.
+- Routes read/write MongoDB through Mongoose schemas in `src/models/*`.
+- Session auth (`express-session` + `connect-mongo`) stores `req.session.user = { id, role }` after successful login.
+
+## Authentication and Roles
+
+- Auth middleware: routes protected with `auth` require an active session; otherwise they return `400 "Not authenticated"`.
+- Role checks are implemented in route modules and return `403` for forbidden access.
+- Supported roles from `src/constants/roles.js`:
+
+```json
+["student", "teacher", "admin"]
 ```
-```role``` parameter are an ENUM, which hold ```['user', 'teacher', 'admin']```. For valid request, role parameter should be one of the ENUM values
 
-For ```auth/login``` endpoint, request structure is
-```JSON
-"email": "string",
-"password": "string",
+- Theme values from `src/constants/themes.js`:
+
+```json
+["light", "dark"]
+```
+
+***
+## API Base URL
+
+All endpoints are mounted under:
+
+```text
+http://localhost:5000/api
+```
+
+***
+## Endpoint Reference
+
+### 1) System
+
+#### `GET /api/`
+- Auth: No
+- Params: None
+- Query: None
+- Body: None
+- Response `200`: plain text `"Hello, world!"`
+
+### 2) Authentication (`/api/auth`)
+
+#### `POST /api/auth/register`
+- Auth: No
+- Body:
+```json
+{
+  "name": "string",
+  "email": "string",
+  "password": "string",
+  "role": "student | teacher | admin"
+}
+```
+- Response `200`:
+```json
+{
+  "name": "string",
+  "email": "string",
+  "role": "student | teacher | admin"
+}
+```
+
+#### `POST /api/auth/login`
+- Auth: No
+- Body:
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+- Side effect: creates session (`req.session.user`)
+- Response `200`: `"Login successful"`
+- Error `400`: `"Incorrect login credentials"`
+
+#### `POST /api/auth/logout`
+- Auth: Yes
+- Body: None
+- Side effect: clears current session
+- Response `200`: `"Logout successful"`
+
+### 3) Users (`/api/users`)
+
+#### `GET /api/users/:id`
+- Auth: No
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`: user object (password excluded)
+
+#### `POST /api/users/`
+- Auth: No
+- Body:
+```json
+{
+  "name": "string",
+  "email": "string",
+  "password": "string",
+  "role": "student | teacher | admin"
+}
+```
+- Response `201`: created user object (password excluded)
+
+#### `PUT /api/users/:id`
+- Auth: No
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Body (partial update):
+```json
+{
+  "name": "string (optional)",
+  "email": "string (optional)",
+  "role": "student | teacher | admin (optional)",
+  "password": "string (optional)"
+}
+```
+- Response `200`: updated user object (password excluded)
+
+#### `DELETE /api/users/:id`
+- Auth: No
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`:
+```json
+{ "message": "User deleted" }
+```
+
+### 4) Assignments + Submissions (`/api/assignments`)
+
+#### `POST /api/assignments/`
+- Auth: Yes (`teacher` only)
+- Body:
+```json
+{
+  "title": "string",
+  "description": "string (optional)",
+  "courseId": "MongoObjectId",
+  "deadline": "ISO date string"
+}
+```
+- Response `201`: assignment object
+
+#### `PUT /api/assignments/:id`
+- Auth: Yes (`teacher` only; owner only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Body (partial):
+```json
+{
+  "title": "string (optional)",
+  "description": "string (optional)",
+  "deadline": "ISO date string (optional)"
+}
+```
+- Response `200`: updated assignment object
+
+#### `GET /api/assignments/`
+- Auth: Yes
+- Behavior by role:
+  - `admin`: all assignments
+  - `teacher`: own assignments
+  - `student`: all assignments (temporary behavior in code)
+- Response `200`: assignment array
+
+#### `GET /api/assignments/course/:courseId`
+- Auth: Yes
+- Params:
+```json
+{ "courseId": "MongoObjectId" }
+```
+- Response `200`: assignment array filtered by `courseId`
+
+#### `GET /api/assignments/:id`
+- Auth: Yes
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`: assignment object
+
+#### `POST /api/assignments/:id/submissions`
+- Auth: Yes (`student` only)
+- Params:
+```json
+{ "id": "MongoObjectId (assignmentId)" }
+```
+- Body:
+```json
+{ "content": "string" }
+```
+- Response `201`: submission object
+
+#### `PUT /api/assignments/:id/submissions`
+- Auth: Yes (`student` only)
+- Params:
+```json
+{ "id": "MongoObjectId (assignmentId)" }
+```
+- Body (intended):
+```json
+{ "content": "string" }
+```
+- Response `200`: updated submission object
+
+#### `GET /api/assignments/:id/submissions/me`
+- Auth: Yes
+- Params:
+```json
+{ "id": "MongoObjectId (assignmentId)" }
+```
+- Response `200`: current user submission object (or `null` if not found in this route)
+
+#### `GET /api/assignments/:id/submissions`
+- Auth: Yes (`teacher` only)
+- Params:
+```json
+{ "id": "MongoObjectId (assignmentId)" }
+```
+- Response `200`: submission array for assignment
+
+### 5) Preferences (`/api/preferences`)
+
+#### `GET /api/preferences/theme`
+- Auth: Yes
+- Body: None
+- Response `200`:
+```json
+{ "theme": "light | dark" }
+```
+
+#### `POST /api/preferences/theme`
+- Auth: Yes
+- Body:
+```json
+{ "theme": "light | dark" }
+```
+- Response `200`:
+```json
+{ "theme": "light | dark" }
+```
+- Error `400`: `"Invalid theme"`
+
+### 6) Admin Dashboard (`/api/admin`)
+
+#### `POST /api/admin/createUser`
+- Auth: No (current code has no auth middleware on this route)
+- Body:
+```json
+{
+  "name": "string",
+  "email": "string",
+  "password": "string",
+  "role": "student | teacher | admin"
+}
+```
+- Response `200`:
+```json
+{
+  "name": "string",
+  "email": "string",
+  "role": "student | teacher | admin"
+}
+```
+
+#### `GET /api/admin/users`
+- Auth: Yes (`admin` only)
+- Response `200`: users array (sensitive fields excluded)
+
+#### `PUT /api/admin/users/:id/role`
+- Auth: Yes (`admin` only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Body:
+```json
+{ "role": "student | teacher | admin" }
+```
+- Response `200`: updated user object
+
+#### `DELETE /api/admin/users/:id`
+- Auth: Yes (`admin` only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`:
+```json
+{ "message": "User deleted" }
+```
+
+#### `GET /api/admin/assignments`
+- Auth: Yes (`admin` only)
+- Response `200`: assignment array
+
+#### `DELETE /api/admin/assignments/:id`
+- Auth: Yes (`admin` only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`:
+```json
+{ "message": "Assignment deleted" }
+```
+
+#### `PUT /api/admin/assignments/:id`
+- Auth: Yes (`admin` only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Body (at least one field):
+```json
+{
+  "title": "string (optional)",
+  "description": "string (optional)",
+  "deadline": "ISO date string (optional)"
+}
+```
+- Response `200`: updated assignment object
+
+#### `GET /api/admin/submissions`
+- Auth: Yes (`admin` only)
+- Response `200`: submission array
+
+#### `DELETE /api/admin/submissions/:id`
+- Auth: Yes (`admin` only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`:
+```json
+{ "message": "Submission deleted" }
+```
+
+#### `GET /api/admin/statistic`
+- Auth: Yes (`admin` only)
+- Response `200`:
+```json
+{
+  "users": 0,
+  "student": 0,
+  "teacher": 0,
+  "admin": 0,
+  "modules": 0,
+  "assignments": 0,
+  "submissions": 0
+}
+```
+
+### 7) Student Dashboard (`/api/student`)
+
+#### `GET /api/student/assignments`
+- Auth: Yes (`student` only)
+- Response `200`: assignment array
+
+#### `GET /api/student/assignments/:id`
+- Auth: Yes (`student` only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`: assignment object
+
+#### `POST /api/student/assignments/:id/submissions`
+- Auth: Yes (`student` only)
+- Params:
+```json
+{ "id": "MongoObjectId (assignmentId)" }
+```
+- Body:
+```json
+{ "content": "string" }
+```
+- Response `201`: submission object
+
+#### `PUT /api/student/assignments/:id/submissions`
+- Auth: Yes (`student` only)
+- Params:
+```json
+{ "id": "MongoObjectId (assignmentId)" }
+```
+- Body:
+```json
+{ "content": "string" }
+```
+- Response `200`: updated submission object
+
+#### `GET /api/student/assignments/:id/submissions/me`
+- Auth: Yes (`student` only)
+- Params:
+```json
+{ "id": "MongoObjectId (assignmentId)" }
+```
+- Response `200`: current student submission object
+
+#### `GET /api/student/submissions`
+- Auth: Yes (`student` only)
+- Response `200`: submission array for current student
+
+### 8) Teacher Dashboard (`/api/teacher`)
+
+#### `POST /api/teacher/`
+- Auth: Yes (`teacher` only)
+- Body:
+```json
+{
+  "title": "string",
+  "description": "string (optional)",
+  "courseId": "MongoObjectId",
+  "deadline": "ISO date string"
+}
+```
+- Response `201`: assignment object
+
+#### `PUT /api/teacher/:id`
+- Auth: Yes (`teacher` only; owner only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Body (partial):
+```json
+{
+  "title": "string (optional)",
+  "description": "string (optional)",
+  "deadline": "ISO date string (optional)"
+}
+```
+- Response `200`: updated assignment object
+
+#### `DELETE /api/teacher/:id`
+- Auth: Yes (`teacher` only; owner only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`:
+```json
+{ "message": "Assignment deleted successfully" }
+```
+
+#### `GET /api/teacher/`
+- Auth: Yes (`teacher` only)
+- Response `200`: assignment array created by current teacher
+
+#### `GET /api/teacher/:id`
+- Auth: Yes (`teacher` only; owner only)
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`: assignment object
+
+### 9) Modules (`/api/modules`)
+
+#### `GET /api/modules/`
+- Auth: No
+- Response `200`: module array
+
+#### `GET /api/modules/:id`
+- Auth: No
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`: module object
+
+#### `POST /api/modules/`
+- Auth: No
+- Body:
+```json
+{
+  "title": "string",
+  "description": "string (optional)"
+}
+```
+- Response `201`: created module object
+
+#### `PUT /api/modules/:id`
+- Auth: No
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Body (partial):
+```json
+{
+  "title": "string (optional)",
+  "description": "string (optional)"
+}
+```
+- Response `200`: updated module object
+
+#### `DELETE /api/modules/:id`
+- Auth: No
+- Params:
+```json
+{ "id": "MongoObjectId" }
+```
+- Response `200`:
+```json
+{ "message": "Module deleted" }
+```
+
+### 10) Calendar (`/api/calendar`)
+
+Calendar event object shape:
+```json
+{
+  "id": "MongoObjectId",
+  "title": "string",
+  "description": "string",
+  "deadline": "ISO date string",
+  "courseId": "MongoObjectId"
+}
+```
+
+#### `GET /api/calendar/`
+- Auth: Yes
+- Response `200`: event array (role filtered)
+
+#### `GET /api/calendar/upcoming`
+- Auth: Yes
+- Response `200`: upcoming event array (deadline >= now)
+
+#### `GET /api/calendar/:date`
+- Auth: Yes
+- Params:
+```json
+{ "date": "YYYY-MM-DD or any parseable date string" }
+```
+- Response `200`: event array for selected day
+
+***
+## Core Request Payload Templates
+
+### Register User
+```json
+{
+  "name": "Alice Example",
+  "email": "alice@example.com",
+  "password": "StrongPassword123",
+  "role": "student"
+}
+```
+
+### Login
+```json
+{
+  "email": "alice@example.com",
+  "password": "StrongPassword123"
+}
+```
+
+### Create Assignment
+```json
+{
+  "title": "Homework 1",
+  "description": "Complete all exercises from chapter 2.",
+  "courseId": "6613f8ac6b8d5f0db1f2a9f2",
+  "deadline": "2026-05-01T23:59:59.000Z"
+}
+```
+
+### Update Assignment
+```json
+{
+  "title": "Homework 1 (Updated)",
+  "description": "Updated task details",
+  "deadline": "2026-05-03T23:59:59.000Z"
+}
+```
+
+### Submit Assignment
+```json
+{
+  "content": "Link to repository and explanation of implementation."
+}
+```
+
+### Update User Role (Admin)
+```json
+{
+  "role": "teacher"
+}
+```
+
+### Create/Update Module
+```json
+{
+  "title": "Algorithms",
+  "description": "Sorting, searching, and complexity basics."
+}
+```
+
+### Update Theme Preference
+```json
+{
+  "theme": "dark"
+}
 ```

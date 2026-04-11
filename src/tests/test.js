@@ -11,6 +11,8 @@ beforeAll(async () => {
     await mongoose.connect(`mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME_TEST}?authSource=admin`);
 });
 
+const seedDatabase = require("../utils/seedDatabase");
+
 beforeEach(async () => {
     //Clear DB
     const collections = mongoose.connection.collections;
@@ -18,7 +20,7 @@ beforeEach(async () => {
         await collections[key].deleteMany();
     }
 
-    //Populate DB with initial values 
+    //Populate DB with initial values
     let users = [
         { name: "User1", email: "email1@email.com", password: "1", role: ROLES.STUDENT },
         { name: "User2", email: "email2@email.com", password: "1", role: ROLES.STUDENT },
