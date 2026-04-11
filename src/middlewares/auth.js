@@ -14,8 +14,6 @@ const authMiddleware = (roles = []) => {
             } else {
                 return res.status(403).send("Access forbidden");
             }
-
-
         }
         else {
             return res.status(401).send("Not authenticated");
