@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 
 const Assignment = require('../models/assignment');
 const Submission = require('../models/submission');
@@ -7,15 +8,6 @@ const authMiddleware = require("../middlewares/auth");
 const ROLES = require('../constants/roles');
 
 // ============ ASSIGNMENTS ============
-/**
- * Assignments endpoints breakdown:
-     - POST: Create assignment, only for lecturer
-     - PUT: Update created assignment addressing specific assignment with the id
-     - GET:'/' -> Receive all assignments that been stored in DB
-     - GET:'/:id' -> Get specific Assignment via ID
-     - GET:'/course/:courseId' -> Get assignments that linked to specific course
- **/
-
 // Get single assignment
 router.get('/:id', authMiddleware(), async (req, res) => {
     try {
@@ -37,16 +29,16 @@ router.post('/', authMiddleware([ROLES.TEACHER]), async (req, res) => {
     try {
         // Create Assignment entity
         // Fix: whitelist fields
-        const { title, description, courseId, deadline } = req.body;
+        const { title, description, moduleId, deadline } = req.body;
 
-        if (!title || !courseId || !deadline) {
+        if (!title || !moduleId || !deadline) {
             return res.status(400).json({ error: 'Missing required fields.' });
         }
 
         const assignment = await Assignment.create({
             title,
             description,
-            courseId,
+            moduleId,
             deadline,
             lecturerId: req.user.id
         });
@@ -123,8 +115,8 @@ router.put('/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
 
         res.json(updatedAssignment);
     } catch (err) {
-        console.log(err);
-        res.status(400).json({ error: 'Bad request' });
+        const error = err.message;
+        res.status(400).json({ error: error });
     }
 });
 
@@ -134,24 +126,19 @@ router.get('/', authMiddleware(), async (req, res) => {
         let assignments;
 
         if (req.user.role === ROLES.ADMIN) {
-            assignments = await Assignment.find()
-
+            assignments = await Assignment.find();
         } else if (req.user.role === ROLES.TEACHER) {
             assignments = await Assignment.find({ lecturerId: req.user.id });
-
         } else {
-            // TODO temprorary allow all - later filter by enrolled courses
-            assignments = await Assignment.find()
-
-            //assignments = await Assignment.find({ courseId: { $in: req.user.courses } })
+            // TODO filter by enrolled modules when student-module enrollment is wired
+            assignments = await Assignment.find();
         }
-        res.json(assignments)
-
+        res.json(assignments);
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'Server error' });
     }
-})
+});
 
 // // Get assignments by course
 // router.get('/course/:id', AuthMiddleware, async (req, res) => {
@@ -168,6 +155,7 @@ router.get('/', authMiddleware(), async (req, res) => {
 // });
 
 // Delete assignment
+// todo broken enpoint
 router.delete('/assignments/:id', authMiddleware(), async (req, res) => {
     try {
         // id format validation
@@ -195,15 +183,6 @@ router.delete('/assignments/:id', authMiddleware(), async (req, res) => {
 
 // ================= SUBMISSIONS =================
 
-/**
- * Submissions endpoints breakdown:
-     * * Allowed to Student:
-         - POST: Attach submissions to specific assignment targeted by id
-         - PUT: Update submission attached to assignment
-         - GET:':id/submissions/me' -> Get student personal submission
-     * * Allowed to Lecturer:
-        - GET:'/:id/submissions' -> Get specific Assignment via ID
- **/
 
 
 // Get all submission
