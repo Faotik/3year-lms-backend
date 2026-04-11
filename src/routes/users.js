@@ -21,7 +21,7 @@ router.get('/', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 });
 
 //Get specific user
-router.get('/:id', authMiddleware(), async (req, res) => {
+router.get('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 	try {
 		if (req.params.id === req.user.id || req.user.role === ROLES.ADMIN) {
 			const user = await User.findById(req.params.id).select('-password');

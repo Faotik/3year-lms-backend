@@ -5,6 +5,7 @@ const Module = require('../models/module');
 const authMiddleware = require("../middlewares/auth");
 const ROLES = require('../constants/roles');
 
+
 // GET all modules
 router.get('/', authMiddleware(), async (req, res) => {
     try {
@@ -23,7 +24,7 @@ router.get('/', authMiddleware(), async (req, res) => {
 });
 
 // GET one module
-router.get('/:id', async (req, res) => {
+router.get('/:id',authMiddleware([ROLES.ADMIN]), async (req, res) => {
     try {
         const module = await Module.findById(req.params.id);
 
@@ -31,7 +32,7 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ message: "Module not found" });
         }
 
-        if (!module.users.includes(req.user.id)) {
+        if (!module.users.includes(req.user.id) && req.user.role !== ROLES.ADMIN) {
             return res.status(404).json({ message: "Access forbidden" });
         }
 
@@ -102,4 +103,5 @@ router.delete('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
+
 module.exports = router;

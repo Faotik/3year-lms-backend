@@ -45,10 +45,13 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/preferences', preferencesRoutes);
+
 app.use('/api/admin', adminDashboard);
 app.use('/api/student', studentDashboard);
 app.use('/api/teacher', teacherDashboard);
+
 app.use('/api/modules', modulesRoutes);
 app.use('/api/calendar', calendarRoutes);
+
 
 module.exports = app;
