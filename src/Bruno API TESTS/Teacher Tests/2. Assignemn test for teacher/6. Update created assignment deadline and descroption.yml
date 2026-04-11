@@ -1,0 +1,22 @@
+info:
+  name: 6. Update created assignment deadline and descroption
+  type: http
+  seq: 6
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/assignments/69daa496de23137404d45ab9"
+  body:
+    type: json
+    data: |-
+      {
+        "deadline" : "2026-7-23",
+        "description": "new description updated with deadline"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

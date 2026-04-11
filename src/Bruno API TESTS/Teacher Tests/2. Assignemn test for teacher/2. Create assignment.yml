@@ -1,0 +1,25 @@
+info:
+  name: 2. Create assignment
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/assignments/"
+  body:
+    type: json
+    data: |-
+      {
+        "title":"Assignemnt 1",
+        "description":"Assignemtn created by Teacher 1, in module 'Only title update'",
+        "moduleId":"69da98b42ee19bc3f0c70563",
+        "deadline":"11.03.2027"
+        
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

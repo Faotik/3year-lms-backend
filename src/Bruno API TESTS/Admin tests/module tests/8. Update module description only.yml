@@ -1,0 +1,21 @@
+info:
+  name: 8. Update module description only
+  type: http
+  seq: 8
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/modules/69dabc979c052c39b2a2aa73"
+  body:
+    type: json
+    data: |-
+      {
+        "description": "Only description now updated"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

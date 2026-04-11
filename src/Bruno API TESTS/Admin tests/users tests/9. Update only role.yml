@@ -1,0 +1,21 @@
+info:
+  name: 9. Update only role
+  type: http
+  seq: 1
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/users/69dabeca9c052c39b2a2aa97"
+  body:
+    type: json
+    data: |-
+      {
+        "role":  "teacher"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

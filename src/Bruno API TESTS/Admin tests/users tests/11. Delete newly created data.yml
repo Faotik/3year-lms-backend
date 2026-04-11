@@ -1,0 +1,15 @@
+info:
+  name: 11. Delete newly created data
+  type: http
+  seq: 1
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/users/69dabeca9c052c39b2a2aa97"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

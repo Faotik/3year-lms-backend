@@ -1,0 +1,24 @@
+info:
+  name: 3. Create new user in db for further tests
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/users"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Test User From Admin", 
+        "email": "email43@email.com", 
+        "password": "34", 
+        "role": "student"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

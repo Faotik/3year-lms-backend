@@ -1,0 +1,21 @@
+info:
+  name: 7. Update only name
+  type: http
+  seq: 1
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/users/69dabeca9c052c39b2a2aa97"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Updated Name 2"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
