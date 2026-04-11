@@ -47,9 +47,9 @@ afterAll(async () => {
     await mongoose.disconnect();
 });
 
-describe("Routes tests", () =>
-    describe("Users", () =>
-        describe("GET /users", () => {
+describe("/api", () =>
+    describe("/users", () =>
+        describe("GET", () => {
             it("should fail to get all users without login", async () => {
                 let route = request.agent(app);
 
@@ -57,6 +57,30 @@ describe("Routes tests", () =>
                     .get("/api/users");
 
                 expect(res.statusCode).toBe(401);
+            });
+            it("should fail to get all users without admin role", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route
+                    .get("/api/users");
+
+                expect(res.statusCode).toBe(403);
+            });
+            it("should succeed", async () => {
+                let route = request.agent(app);
+
+                const log_req = await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                console.log(log_req.headers);
+                const res = await route
+                    .get("/api/users");
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body).toBeDefined();
             });
         })
     )
