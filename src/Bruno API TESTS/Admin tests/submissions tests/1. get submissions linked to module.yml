@@ -1,0 +1,15 @@
+info:
+  name: 1. get submissions linked to module
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/assignments/69dabf779c052c39b2a2aaac/submissions"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

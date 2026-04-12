@@ -1,0 +1,15 @@
+info:
+  name: 2. Delete assignments by id
+  type: http
+  seq: 2
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/assignments/69daaca4699c02e6c44e34fa"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

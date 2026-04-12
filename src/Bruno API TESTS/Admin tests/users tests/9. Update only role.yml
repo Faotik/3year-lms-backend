@@ -1,7 +1,7 @@
 info:
   name: 9. Update only role
   type: http
-  seq: 1
+  seq: 9
 
 http:
   method: PUT

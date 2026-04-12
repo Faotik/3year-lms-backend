@@ -1,7 +1,7 @@
 info:
   name: 8. Update only email
   type: http
-  seq: 1
+  seq: 8
 
 http:
   method: PUT

@@ -16,6 +16,7 @@ const formatEvent = (assignment) => ({
     courseId: assignment.courseId
 });
 
+// TODO calendar endpoint completely broken -> infinite request load
 
 // ================= All Events =================
 router.get('/', AuthMiddleware, async (req, res) => {

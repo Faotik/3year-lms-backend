@@ -1,11 +1,11 @@
 info:
   name: 11. Delete newly created data
   type: http
-  seq: 1
+  seq: 11
 
 http:
   method: DELETE
-  url: "{{baseUrl}}/users/69dabeca9c052c39b2a2aa97"
+  url: "{{baseUrl}}/users/69dbc93e5a7df7aec3c52419"
   auth: inherit
 
 settings:

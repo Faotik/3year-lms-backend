@@ -1,0 +1,21 @@
+info:
+  name: 2. Set theme
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/preferences/theme"
+  body:
+    type: json
+    data: |-
+      {
+        "theme": "dark"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,7 +1,7 @@
 info:
   name: 3. Create new user in db for further tests
   type: http
-  seq: 1
+  seq: 3
 
 http:
   method: POST
