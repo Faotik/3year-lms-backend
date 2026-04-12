@@ -1,7 +1,7 @@
 info:
   name: Teacher Tests
   type: folder
-  seq: 3
+  seq: 2
 
 request:
   auth: inherit

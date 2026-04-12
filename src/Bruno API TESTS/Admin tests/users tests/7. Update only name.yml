@@ -1,7 +1,7 @@
 info:
   name: 7. Update only name
   type: http
-  seq: 1
+  seq: 7
 
 http:
   method: PUT

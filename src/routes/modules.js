@@ -43,6 +43,7 @@ router.get('/:id', authMiddleware(), async (req, res) => {
 });
 
 // GET all assignments of the module
+// todo broken endpoint
 router.get('/assignments/:id', authMiddleware(), async (req, res) => {
     try {
         const module = await Module.findById(req.params.id);

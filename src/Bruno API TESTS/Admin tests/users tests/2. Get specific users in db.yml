@@ -1,11 +1,11 @@
 info:
   name: "2. Get specific users in db "
   type: http
-  seq: 1
+  seq: 2
 
 http:
   method: GET
-  url: "{{baseUrl}}/users/69dabc498f4a30d894f70051"
+  url: "{{baseUrl}}/users/69dbbf9fd05a16865bb50ba5"
   auth: inherit
 
 settings:

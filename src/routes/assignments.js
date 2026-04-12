@@ -191,6 +191,7 @@ router.delete('/:id', authMiddleware(), async (req, res) => {
 
 
 // Get all submission
+//todo broken endpoint
 router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
     try {
         if (req.user.role === ROLES.ADMIN) {
@@ -237,7 +238,8 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
 
     } catch (err) {
         console.log(err);
-        res.status(400).json({ error: 'Bad request' });
+        const error = err.message;
+        res.status(400).json({ error: error });
     }
 });
 
