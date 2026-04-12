@@ -79,7 +79,7 @@ describe("/api", () => {
 
                 expect(res.statusCode).toBe(200);
             });
-        })
+        });
         describe("POST /logout", () => {
             it("should fail to logout without login first", async () => {
                 let route = request.agent(app);
@@ -101,8 +101,8 @@ describe("/api", () => {
 
                 expect(res.statusCode).toBe(200);
             });
-        })
-    })
+        });
+    });
     describe("/users", () => {
         describe("GET /", () => {
             it("should fail to get all users without login", async () => {
@@ -136,7 +136,7 @@ describe("/api", () => {
                 expect(res.statusCode).toBe(200);
                 expect(res.body).toBeDefined();
             });
-        })
+        });
         describe("GET /:id", () => {
             it("should fail to get user without login", async () => {
                 let route = request.agent(app);
@@ -193,7 +193,7 @@ describe("/api", () => {
                 expect(res.body.email).toBe(user.email);
                 expect(res.body.role).toBe(user.role);
             });
-        })
+        });
         describe("POST /", () => {
             it("should fail to create user without login", async () => {
                 let route = request.agent(app);
@@ -300,7 +300,7 @@ describe("/api", () => {
                 expect(res.body.email).toBe("test@email.com");
                 expect(res.body.role).toBe(ROLES.STUDENT);
             });
-        })
+        });
         describe("PUT /:id", () => {
             it("should fail to update user without login", async () => {
                 let route = request.agent(app);
@@ -402,7 +402,7 @@ describe("/api", () => {
                 expect(res.body.email).toBe("test@email.com");
                 expect(res.body.role).toBe(user.role);
             });
-        })
+        });
         describe("DELETE /:id", () => {
             it("should fail to delete user without login", async () => {
                 let route = request.agent(app);
@@ -472,8 +472,71 @@ describe("/api", () => {
                 const deleted_user = await User.findById(user.id);
                 expect(deleted_user).toBeNull();
             });
-        })
-    })
+        });
+    });
+    describe("/preferences", () => {
+        describe("GET /theme", () => {
+            it("should fail to get theme without login", async () => {
+                let route = request.agent(app);
+
+                const res = await route
+                    .get("/api/preferences/theme");
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should succeed to get user theme", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+
+                const res = await route
+                    .get("/api/preferences/theme");
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body.theme).toBeDefined();
+            });
+        });
+        describe("POST /theme", () => {
+            it("should fail to update theme without login", async () => {
+                let route = request.agent(app);
+
+                const res = await route
+                    .post("/api/preferences/theme")
+                    .send({ theme: "dark" });
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to update preference with invalid theme", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+
+                const res = await route
+                    .post("/api/preferences/theme")
+                    .send({ theme: "a" });
+
+                expect(res.statusCode).toBe(400);
+            });
+            it("should succeed to update user theme", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+
+                const res = await route
+                    .post("/api/preferences/theme")
+                    .send({ theme: "dark" });
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body.theme).toBe("dark");
+            });
+        });
+    });
     describe("/modules", () => {
         describe("GET /", () => {
             it("should fail to get all modules without login", async () => {
@@ -511,7 +574,7 @@ describe("/api", () => {
                 expect(Array.isArray(res.body)).toBe(true);
                 expect(res.body.length).toBe(2);
             });
-        })
+        });
         describe("GET /:id", () => {
             it("should fail to get module without login", async () => {
                 let route = request.agent(app);
@@ -559,7 +622,7 @@ describe("/api", () => {
                 expect(res.statusCode).toBe(200);
                 expect(res.body.title).toBe("Module 1");
             });
-        })
+        });
         describe("POST /", () => {
             it("should fail to create module without login", async () => {
                 let route = request.agent(app);
@@ -610,7 +673,7 @@ describe("/api", () => {
                 expect(res.body.title).toBe("New Module");
                 expect(res.body.description).toBe("New Desc");
             });
-        })
+        });
         describe("PUT /:id", () => {
             it("should fail to update module without login", async () => {
                 let route = request.agent(app);
@@ -667,7 +730,7 @@ describe("/api", () => {
                 expect(res.body.title).toBe("NewTitle");
                 expect(res.body.description).toBe(module.description);
             });
-        })
+        });
         describe("DELETE /:id", () => {
             it("should fail to delete module without login", async () => {
                 let route = request.agent(app);
@@ -719,6 +782,6 @@ describe("/api", () => {
                 const deleted_user = await User.findById(module.id);
                 expect(deleted_user).toBeNull();
             });
-        })
-    })
+        });
+    });
 });

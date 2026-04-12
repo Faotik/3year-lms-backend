@@ -24,7 +24,26 @@ router.get('/', authMiddleware(), async (req, res) => {
 });
 
 // GET one module
-router.get('/:id',authMiddleware([ROLES.ADMIN]), async (req, res) => {
+router.get('/:id', authMiddleware(), async (req, res) => {
+    try {
+        const module = await Module.findById(req.params.id);
+
+        if (!module) {
+            return res.status(404).json({ message: "Module not found" });
+        }
+
+        if (!module.users.includes(req.user.id) && req.user.role !== ROLES.ADMIN) {
+            return res.status(404).json({ message: "Access forbidden" });
+        }
+
+        res.json(module);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET all assignments of the module
+router.get('/assignments/:id', authMiddleware(), async (req, res) => {
     try {
         const module = await Module.findById(req.params.id);
 
