@@ -88,6 +88,7 @@ Key files:
 - `docker-compose.yml`: local MongoDB container declaration used mainly during the development. Now deprecated since
   Database was moved to **MongoDB Atlas**
 - `.env.tempate`: Template holding all necessary fields for database
+- `src/tests/test.js`: Automatic Endpoints tests
 
 ## 5. Installation & Setup
 
