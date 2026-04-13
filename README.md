@@ -1,6 +1,6 @@
 # Moodle Backend
 
-A Moodle-inspired LMS backend built with Node.js, Express, and MongoDB. The project provides REST APIs for
+A Moodle-inspired LMS backend built with **Node.js**, **Express**, and **MongoDB**. The project provides **REST APIs** for
 authentication, user management, modules, assignments, submissions, preferences, dashboards, and calendar views, using
 role-based access for students, teachers, and admins.
 
@@ -12,22 +12,21 @@ role-based access for students, teachers, and admins.
 
 - **Main features**:
     - Session-based login/logout
-    - Admin: user and module management
-    - Teacher: assignments management
-    - Student: submissions workflow
+    - **Admin**: user and module management
+    - **Teacher**: assignments management
+    - **Student**: submissions workflow
     - Theme preference updates
     - Calendar and platform statistics APIs
 
-- **Current backend scope**: API + MongoDB database + session store; There is no frontend in this repository. All
-  testing makes by using API clients, such as **Bruno**, sessions of which located at `src/Bruno API TESTS`
-- **Repo boundary**: frontend and backend are separated; this repository contains backend APIs only.
+- **Current backend stack**: API + MongoDB database + session store;
+- **Project separation**: frontend and backend are separated; this repository contains backend APIs only. For API testing use API client such as **Bruno** with ready to use collectin stored in `src/Bruno API TESTS`
 
 ## 3. System Architecture
 
-- **REST API layer**: Express routers starts in `src/app.js` under `/api/*` as a `baseUr`.
-- **Middleware layer**: `src/middlewares/auth.js` enforces authentication and optional role checks; admin role bypasses
-  role-limited guards.
-- **Role-based access control**: role constants from `src/constants/roles.js` are used in route guards and per-route
+- **REST API order**: Express routers starts in `src/app.js` under `/api/*` referred to as a `baseUr` in **Bruno** environment.
+- **Middleware**: `src/middlewares/auth.js` enable authentication and optional role checks; admin role bypasses
+  role-limited checks.
+- **Role-based access control**: role constants from `src/constants/roles.js` are used in route checks and per-route
   checks.
 - **Authentication flow**:
     - `POST /api/auth/login` validates credentials with bcrypt and stores `{ id, role }` in `req.session.user`.
@@ -89,6 +88,7 @@ Key files:
   Database was moved to **MongoDB Atlas**
 - `.env.tempate`: Template holding all necessary fields for database
 - `src/tests/test.js`: Automatic Endpoints tests
+-  `src/Bruno API TESTS/`: Collection of manual endpoints for **Bruno** to more flexible testing 
 
 ## 5. Installation & Setup
 
@@ -98,6 +98,7 @@ Key files:
 - npm
 - MongoDB
 - Docker (Deprecated)
+- 
 
 ### Clone and install
 
@@ -152,6 +153,8 @@ Variable details:
 - `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME`: primary MongoDB connection (`src/server.js`,
   `src/app.js`, `src/utils/seedDatabase.js`).
 - `DB_NAME_TEST`: test database (`src/tests/test.js`).
+
+All needed .env parameters stored in .env.template. You can duplicate, and rename it into the .env file.
 
 ## 7. Running the Project
 
