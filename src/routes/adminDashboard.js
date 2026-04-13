@@ -7,303 +7,25 @@ const Assignment = require('../models/assignment');
 const Submission = require('../models/submission');
 const Module = require('../models/module');
 
-const AuthMiddleware = require('../middlewares/auth');
+const authMiddleware = require('../middlewares/auth');
 const ROLES = require('../constants/roles');
 const bcrypt = require("bcrypt");
-
-
-// Admin rights validation
-const requireAdmin = (req, res, next) => {
-    if (req.user.role !== ROLES.ADMIN) {
-        return res.status(403).json({ error: 'Admin only' });
-    }
-    next();
-};
-
-
-// Create new user, assign its password, email, name and role
-router.post('/createUser', async (req, res) => {
-    try{
-        //Hash password
-        const hashed_password = await bcrypt.hash(req.body.password, 10);
-        //Add user to db
-        const user = await User.create({
-            name: req.body.name,
-            email: req.body.email,
-            password: hashed_password,
-            role: req.body.role,
-        });
-        res.status(200).json({ name: user.name, email: user.email, role: user.role });
-    }catch (err){
-        console.error(err);
-        res.status(400).json({ error: 'Bad request' });
-    }
-
-})
-
-
-// Get all users
-router.get('/users', AuthMiddleware, requireAdmin, async (req, res) => {
-    try {
-        // Restrict 'password' and 'token' fields in response
-        const users = await User.find().select('-password -refreshTokens');
-        res.json(users);
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-
-// Update user role
-router.put('/users/:id/role', AuthMiddleware, requireAdmin, async (req, res) => {
-    try {
-
-        // User id validation
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ error: 'Invalid ID' });
-        }
-
-        const { role } = req.body;
-
-        // Check role existence and validness
-        if (!role || !Object.values(ROLES).includes(role)) {
-            return res.status(400).json({ error: 'Invalid role' });
-        }
-
-        // Own role manipulation validation
-        if (req.user.id === req.params.id) {
-            return res.status(400).json({ error: 'Cannot change your own role' });
-        }
-
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            { role },
-            { new: true }
-        ).select('-password -refreshTokens'); // Restrict 'password' and 'token' fields in response
-
-        // User existence validation
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        res.json(user);
-
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: 'Bad request' });
-    }
-});
-
-
-// Delete user
-router.delete('/users/:id', AuthMiddleware, requireAdmin, async (req, res) => {
-    try {
-        // Id format validation
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ error: 'Invalid ID' });
-        }
-
-        // Prevent admin to delete himself
-        if (req.user.id === req.params.id) {
-            return res.status(400).json({ error: 'You cannot delete yourself' });
-        }
-
-        const user = await User.findById(req.params.id);
-
-        // Check user existence
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Prevent deleting last admin in system
-        const adminCount = await User.countDocuments({ role: ROLES.ADMIN });
-        if (adminCount === 1 && user.role === ROLES.ADMIN) {
-            return res.status(400).json({ error: 'Cannot delete last admin' });
-        }
-
-        await User.findByIdAndDelete(req.params.id);
-
-        res.json({ message: 'User deleted' });
-
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: 'Bad request' });
-    }
-});
-
-
-// TODO modify user permissions of what modules they can see and access
-
-// ================= ASSIGNMENTS =================
-
-// Get all assignments
-router.get('/assignments', AuthMiddleware, requireAdmin, async (req, res) => {
-    try {
-        // return all assignments in system to admin
-        const assignments = await Assignment.find();
-        res.json(assignments);
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-
-// Delete assignment
-router.delete('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res) => {
-    try {
-        // id format validation
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ error: 'Invalid ID' });
-        }
-
-        const deleted = await Assignment.findByIdAndDelete(req.params.id);
-
-        // check assignment existence in system
-        if (!deleted) {
-            return res.status(404).json({ error: 'Assignment not found' });
-        }
-
-        // remove all submissions linked to assignment
-        await Submission.deleteMany({ assignmentId: req.params.id });
-
-        res.json({ message: 'Assignment deleted' });
-
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: 'Bad request' });
-    }
-});
-
-
-// Update assignment fields
-router.put('/assignments/:id', AuthMiddleware, requireAdmin, async (req, res) => {
-    try {
-        // Validate Mongo ID
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ error: 'Invalid assignment ID' });
-        }
-
-        const { title, deadline, description } = req.body;
-
-        // Build safe update object (whitelist only)
-        const updates = {};
-
-        // Update title if provided
-        if (title) {
-            if (typeof title !== 'string' || title.trim().length === 0) {
-                return res.status(400).json({ error: 'Invalid title' });
-            }
-
-            updates.title = title.trim();
-        }
-
-        // Update deadline if provided
-        if (deadline) {
-            const parsedDeadline = new Date(deadline);
-
-            if (isNaN(parsedDeadline.getTime())) {
-                return res.status(400).json({ error: 'Invalid deadline' });
-            }
-
-            updates.deadline = parsedDeadline;
-        }
-
-        // Update description if provided
-        if (description) {
-            if (typeof description !== 'string') {
-                return res.status(400).json({ error: 'Invalid description' });
-            }
-
-            updates.description = description.trim();
-        }
-
-        // Ensure at least one field is being updated
-        if (Object.keys(updates).length === 0) {
-            return res.status(400).json({ error: 'No valid fields provided' });
-        }
-
-        const updatedAssignment = await Assignment.findByIdAndUpdate(
-            req.params.id,
-            updates,
-            {
-                new: true,
-                runValidators: true
-            }
-        );
-
-        // Check assignment exists
-        if (!updatedAssignment) {
-            return res.status(404).json({ error: 'Assignment not found' });
-        }
-
-        res.json(updatedAssignment);
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-  });
-
-
-// ================= SUBMISSIONS =================
-
-// Get all submissions
-router.get('/submissions', AuthMiddleware, requireAdmin, async (req, res) => {
-    try {
-        // return all submissions to admin
-        const submissions = await Submission.find();
-        res.json(submissions);
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-
-// Delete submission
-router.delete('/submissions/:id', AuthMiddleware, requireAdmin, async (req, res) => {
-    try {
-        // Id format validation
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ error: 'Invalid ID' });
-        }
-
-        const deleted = await Submission.findByIdAndDelete(req.params.id);
-
-        // submission existence validation
-        if (!deleted) {
-            return res.status(404).json({ error: 'Submission not found' });
-        }
-
-        res.json({ message: 'Submission deleted' });
-
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: 'Bad request' });
-    }
-});
-
 
 // ================= PLATFORM STATISTIC =================
 
 // Get statistic over the platform
-router.get('/statistic', AuthMiddleware, requireAdmin, async (req, res) => {
-    try{
+router.get('/statistic', authMiddleware([ROLES.ADMIN]), async (req, res) => {
+    try {
         const totalUserCount = await User.countDocuments();
         const studentCount = await User.countDocuments({ role: ROLES.STUDENT });
-        const teacherCount = await User.countDocuments({role: ROLES.TEACHER});
-        const adminCount = await User.countDocuments({role: ROLES.ADMIN});
+        const teacherCount = await User.countDocuments({ role: ROLES.TEACHER });
+        const adminCount = await User.countDocuments({ role: ROLES.ADMIN });
         const moduleCount = await Module.countDocuments();
         const assignmentCount = await Assignment.countDocuments();
         const submissionCount = await Submission.countDocuments();
 
         res.json({
-            users:totalUserCount,
+            users: totalUserCount,
             student: studentCount,
             teacher: teacherCount,
             admin: adminCount,
@@ -312,7 +34,7 @@ router.get('/statistic', AuthMiddleware, requireAdmin, async (req, res) => {
             submissions: submissionCount
         });
 
-    }catch(err){
+    } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error occured' });
     }

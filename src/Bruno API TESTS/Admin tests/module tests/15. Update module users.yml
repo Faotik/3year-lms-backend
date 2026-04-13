@@ -1,0 +1,21 @@
+info:
+  name: 15. Update module users
+  type: http
+  seq: 15
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/modules/69dbc1a64639404e7f2c23a3"
+  body:
+    type: json
+    data: |-
+      {
+        "users": ["69dbbf9fd05a16865bb50ba9","69dbbf9fd05a16865bb50ba5"]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

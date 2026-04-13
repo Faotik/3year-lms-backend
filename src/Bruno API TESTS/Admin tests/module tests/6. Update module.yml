@@ -1,0 +1,22 @@
+info:
+  name: 6. Update module
+  type: http
+  seq: 6
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/modules/69dbc1a64639404e7f2c23a3"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Math",
+        "description" : "Math subject:"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

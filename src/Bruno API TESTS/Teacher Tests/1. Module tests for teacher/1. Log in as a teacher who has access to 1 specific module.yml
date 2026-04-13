@@ -1,0 +1,22 @@
+info:
+  name: "1. Log in as a teacher who has access to 1 specific module "
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/login"
+  body:
+    type: json
+    data: |-
+      {
+          "email":      "email3@email.com",
+          "password":   "1"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

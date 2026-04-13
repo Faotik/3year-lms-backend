@@ -1,0 +1,22 @@
+info:
+  name: 3. Create module from admin perspective
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/modules"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Initial",
+        "description" : "Initial"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,4 @@
+name: base_url
+variables:
+  - name: baseUrl
+    value: http://localhost:22617/api
