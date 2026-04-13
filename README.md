@@ -4,6 +4,23 @@ A Moodle-inspired LMS backend built with **Node.js**, **Express**, and **MongoDB
 authentication, user management, modules, assignments, submissions, preferences, dashboards, and calendar views, using
 role-based access for students, teachers, and admins.
 
+## 1. Navigation
+
+- [1. Navigation](#1-navigation)
+- [2. Project Overview](#2-project-overview)
+- [3. System Architecture](#3-system-architecture)
+- [4. Project Structure](#4-project-structure)
+- [5. Installation & Setup](#5-installation--setup)
+- [6. Environment Variables](#6-environment-variables)
+- [7. Running the Project](#7-running-the-project)
+- [8. Authentication](#8-authentication)
+- [9. Database Models](#9-database-models)
+- [10. Endpoints testing](#10-endpoints-testing)
+- [11. API Endpoints](#11-api-endpoints)
+- [12. Request / Response Models](#12-request--response-models)
+- [13. Security & Validation](#13-security--validation)
+- [14. Team Contributions](#14-team-contributions)
+
 ## 2. Project Overview
 
 - **Purpose**: enable APIs for managing users, modules, assignments, submissions, and role-specific dashboard data.
