@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require("mongoose");
 
 const Module = require('../models/module');
+const Assignment = require('../models/assignment');
 const authMiddleware = require("../middlewares/auth");
 const ROLES = require('../constants/roles');
 
@@ -19,33 +21,44 @@ router.get('/', authMiddleware(), async (req, res) => {
 
         res.json(modules);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
 // GET one module
 router.get('/:id', authMiddleware(), async (req, res) => {
     try {
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Module not found' });
+        }
+
         const module = await Module.findById(req.params.id);
 
         if (!module) {
             return res.status(404).json({ message: "Module not found" });
         }
 
-        if (!module.users.includes(req.user.id) && req.user.role !== ROLES.ADMIN) {
-            return res.status(404).json({ message: "Access forbidden" });
+        if (!module.users.some(id => id.equals(req.user.id)) && req.user.role !== ROLES.ADMIN) {
+            return res.status(403).json({ message: "Access forbidden" });
         }
 
         res.json(module);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
 // GET all assignments of the module
-// todo broken endpoint
-router.get('/assignments/:id', authMiddleware(), async (req, res) => {
+router.get('/:id/assignments/', authMiddleware(), async (req, res) => {
     try {
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Module not found' });
+        }
+
         const module = await Module.findById(req.params.id);
 
         if (!module) {
@@ -53,12 +66,17 @@ router.get('/assignments/:id', authMiddleware(), async (req, res) => {
         }
 
         if (!module.users.includes(req.user.id) && req.user.role !== ROLES.ADMIN) {
-            return res.status(404).json({ message: "Access forbidden" });
+            return res.status(403).json({ message: "Access forbidden" });
         }
 
-        res.json(module);
+        const assignments = await Assignment.find({
+            moduleId: { $in: module.id }
+        });
+
+        res.json(assignments);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -79,13 +97,19 @@ router.post('/', authMiddleware([ROLES.ADMIN]), async (req, res) => {
         res.status(201).json({ title, description });
 
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
 // UPDATE
 router.put('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
     try {
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Module not found' });
+        }
+
         const { title, description, users } = req.body;
 
         const module = await Module.findById(req.params.id);
@@ -104,15 +128,21 @@ router.put('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
         }
 
         await module.save();
-        res.json({ title, description, users });
+        res.json({ title: module.title, description: module.description, users: module.users });
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
 // DELETE
 router.delete('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
     try {
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Module not found' });
+        }
+
         const module = await Module.findById(req.params.id);
         if (!module) return res.status(404).json({ message: "Module not found" });
 
@@ -120,7 +150,8 @@ router.delete('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
         res.json({ message: "Module deleted" });
 
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 

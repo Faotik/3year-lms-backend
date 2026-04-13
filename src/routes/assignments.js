@@ -4,23 +4,51 @@ const mongoose = require('mongoose');
 
 const Assignment = require('../models/assignment');
 const Submission = require('../models/submission');
+const Module = require('../models/module');
 const authMiddleware = require("../middlewares/auth");
 const ROLES = require('../constants/roles');
 
 // ============ ASSIGNMENTS ============
+// Get all assignments
+router.get('/', authMiddleware(), async (req, res) => {
+    try {
+        let assignments;
+
+        if (req.user.role === ROLES.ADMIN) {
+            assignments = await Assignment.find();
+        } else {
+            const moduleIds = await Module.find({
+                users: req.user.id
+            }).distinct('_id');
+            assignments = await Assignment.find({
+                moduleId: { $in: moduleIds }
+            });
+        }
+        res.json(assignments);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get single assignment
 router.get('/:id', authMiddleware(), async (req, res) => {
     try {
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Assignment not found' });
+        }
+
         const assignment = await Assignment.findById(req.params.id);
 
         if (!assignment) {
-            return res.status(404).json({ error: 'Not found' });
+            return res.status(404).json({ error: 'Assignment not found' });
         }
 
         res.json(assignment);
     } catch (err) {
-        console.log(err);
-        res.status(400).json({ error: 'Invalid ID' });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -35,6 +63,18 @@ router.post('/', authMiddleware([ROLES.TEACHER]), async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields.' });
         }
 
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(moduleId)) {
+            return res.status(400).json({ error: 'Module not found' });
+        }
+        const module = await Module.findById(moduleId);
+        if (!module) {
+            return res.status(400).json({ error: 'Module not found.' });
+        }
+        if (!module.users.some(id => id.equals(req.user.id)) && req.user.role !== ROLES.ADMIN) {
+            return res.status(403).json({ message: "Access forbidden" });
+        }
+
         const assignment = await Assignment.create({
             title,
             description,
@@ -46,18 +86,30 @@ router.post('/', authMiddleware([ROLES.TEACHER]), async (req, res) => {
         res.status(201).json(assignment);
 
     } catch (err) {
-        // Iternal log
-        console.log(err);
-        res.status(400).json({ error: 'Bad request' });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
 // Update assignment (lecturer)
 router.put('/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
     try {
-        // Validate Mongo ID
+        // Validate ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ error: 'Invalid assignment ID' });
+            return res.status(404).json({ error: 'Assignment not found' });
+        }
+
+        if (req.user.role !== ROLES.ADMIN) {
+            const moduleIds = await Module.find({
+                users: req.user.id
+            }).distinct('_id');
+            const assignment = await Assignment.findOne({
+                _id: req.params.id,
+                moduleId: { $in: moduleIds }
+            });
+            if (!assignment) {
+                return res.status(404).json({ error: 'Assignment not found' });
+            }
         }
 
         const { title, deadline, description } = req.body;
@@ -115,74 +167,38 @@ router.put('/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
 
         res.json(updatedAssignment);
     } catch (err) {
-        const error = err.message;
-        res.status(400).json({ error: error });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
-
-// Get all assignments
-router.get('/', authMiddleware(), async (req, res) => {
-    try {
-        let assignments;
-
-        if (req.user.role === ROLES.ADMIN) {
-            assignments = await Assignment.find();
-        } else if (req.user.role === ROLES.TEACHER) {
-            assignments = await Assignment.find({ lecturerId: req.user.id });
-        } else {
-            // TODO filter by enrolled modules when student-module enrollment is wired
-            assignments = await Assignment.find();
-        }
-        res.json(assignments);
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-// // Get assignments by course
-// router.get('/course/:id', AuthMiddleware, async (req, res) => {
-//     try {
-//         if
-//         const assignments = await Assignment.find({ courseId: req.params.courseId });
-
-//         res.json(assignments);
-
-//     } catch (err) {
-//         console.log(err);
-//         res.status(500).json({ error: 'Server error' });
-//     }
-// });
 
 // Delete assignment
-router.delete('/:id', authMiddleware(), async (req, res) => {
+router.delete('/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
     try {
-        // id format validation
+        // Validate ID
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ error: 'Invalid ID' });
-        }
-
-        let deleted;
-        if (req.user.role === ROLES.ADMIN) {
-            deleted = await Assignment.findOneAndDelete({ _id: req.params.id });
-        } else {
-            deleted = await Assignment.findOneAndDelete({
-                _id: req.params.id,
-                lecturerId: req.user.id
-            });
-        }
-
-        if (!deleted) {
             return res.status(404).json({ error: 'Assignment not found' });
         }
 
+        const assignment = await Assignment.findOne({
+            _id: req.params.id
+        });
+        if (!assignment) {
+            return res.status(404).json({ error: 'Assignment not found' });
+        }
+
+        const module = await Module.findById(assignment.moduleId);
+        if (!module.users.some(id => id.equals(req.user.id)) && req.user.role !== ROLES.ADMIN) {
+            return res.status(403).json({ message: "Access forbidden" });
+        }
+        await assignment.deleteOne();
         await Submission.deleteMany({ assignmentId: req.params.id });
 
-        res.json({ message: 'Assignment deleted' });
+        return res.json({ message: 'Assignment deleted' });
 
     } catch (err) {
         console.error(err);
-        res.status(400).json({ error: 'Bad request' });
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -191,7 +207,6 @@ router.delete('/:id', authMiddleware(), async (req, res) => {
 
 
 // Get all submission
-//todo broken endpoint
 router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
     try {
         if (req.user.role === ROLES.ADMIN) {
@@ -237,9 +252,8 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
         }
 
     } catch (err) {
-        console.log(err);
-        const error = err.message;
-        res.status(400).json({ error: error });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -281,12 +295,12 @@ router.post('/:id/submissions', authMiddleware(), async (req, res) => {
         res.status(201).json(submission);
 
     } catch (err) { // Catch any error
-        console.log(err);
-
-        if (err.conde === 11000) {
+        if (err.code === 11000) {
             return res.status(400).json({ error: 'Already submitted' });
         }
-        res.status(400).json({ error: 'Bad request' });
+
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -334,8 +348,8 @@ router.put('/:id/submissions', authMiddleware(), async (req, res) => {
         // Return updated object
         res.json(updated);
     } catch (err) {
-        console.log(err);
-        res.status(400).json({ error: 'Bad request' });
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -358,7 +372,7 @@ router.delete('/submissions/:id', authMiddleware([ROLES.TEACHER]), async (req, r
 
     } catch (err) {
         console.error(err);
-        res.status(400).json({ error: 'Bad request' });
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 

@@ -21,7 +21,7 @@ router.get('/', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 });
 
 //Get specific user
-router.get('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
+router.get('/:id', authMiddleware(), async (req, res) => {
 	try {
 		if (req.params.id === req.user.id || req.user.role === ROLES.ADMIN) {
 			const user = await User.findById(req.params.id).select('-password');
@@ -40,6 +40,14 @@ router.get('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 //Create a new user
 router.post('/', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 	try {
+		if (!req.body.name || !req.body.email || !req.body.password || !req.body.role) {
+			return res.status(400).send("Incorrect details");
+		}
+
+		if (!req.body.email.includes("@")) {
+			return res.status(400).send("Email should contains '@'");
+		}
+
 		//Hash password
 		const hashed_password = await bcrypt.hash(req.body.password, 10);
 		//Add user to db
@@ -51,6 +59,10 @@ router.post('/', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 		});
 		return res.status(201).json({ name: user.name, email: user.email, role: user.role });
 	} catch (err) {
+		if (err.code === 11000) {
+			return res.status(400).json({ message: "Email already exists" });
+		}
+
 		console.error(err);
 		return res.status(500).json({ error: 'Server error' });
 	}
@@ -58,8 +70,13 @@ router.post('/', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 })
 
 //Update specific user infomation
-router.put('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
+router.put('/:id', authMiddleware(), async (req, res) => {
 	try {
+		// Validate ID
+		if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+			return res.status(404).json({ error: 'User not found' });
+		}
+
 		if (req.params.id === req.user.id || req.user.role === ROLES.ADMIN) {
 			const { name, email, password, role } = req.body;
 
@@ -75,6 +92,9 @@ router.put('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 				user.name = req.body.name;
 			}
 			if (email) {
+				if (!email.includes("@")) {
+					return res.status(400).send("Email should contains '@'");
+				}
 				user.email = req.body.email;
 			}
 			if (role) {
@@ -102,6 +122,7 @@ router.put('/:id', authMiddleware([ROLES.ADMIN]), async (req, res) => {
 		if (err.code === 11000) {
 			return res.status(400).json({ message: "Email already exists" });
 		}
+
 		console.error(err);
 		return res.status(500).json({ error: 'Server error' });
 	}

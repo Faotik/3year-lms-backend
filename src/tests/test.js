@@ -621,7 +621,7 @@ describe("/api", () => {
                     .send({ email: "email1@email.com", password: "1" });
                 const res = await route.get(`/api/modules/${module.id}`);
 
-                expect(res.statusCode).toBe(404);
+                expect(res.statusCode).toBe(403);
             });
             it("should succeed to get module if user has access", async () => {
                 let route = request.agent(app);
@@ -868,7 +868,7 @@ describe("/api", () => {
                 const assignment = await Assignment.findOne({ title: "Assignment 1" });
 
                 const res = await route
-                    .get(`/api/assignments${assignment.id}`);
+                    .get(`/api/assignments/${assignment.id}`);
 
                 expect(res.statusCode).toBe(401);
             });
@@ -881,7 +881,7 @@ describe("/api", () => {
                 const res = await route
                     .get("/api/assignments/-1");
 
-                expect(res.statusCode).toBe(400);
+                expect(res.statusCode).toBe(404);
             });
             it("should succeed to get an assignment", async () => {
                 const route = request.agent(app);
