@@ -1,0 +1,21 @@
+info:
+  name: 2. Submit via main assignments API
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/assignments/{{assignment_id}}/submissions"
+  body:
+    type: json
+    data: |-
+      {
+        "content": "Submission via POST /api/assignments/:id/submissions"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

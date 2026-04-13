@@ -6,11 +6,7 @@ const assignmentSchema = new mongoose.Schema({
         required: true
     },
     description: String,
-    courseId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true
-    },
-    lecturerId: {
+    moduleId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },

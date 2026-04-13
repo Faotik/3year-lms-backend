@@ -1,41 +1,84 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 
 const Assignment = require('../models/assignment');
 const Submission = require('../models/submission');
-const AuthMiddleware = require("../middlewares/auth");
+const Module = require('../models/module');
+const authMiddleware = require("../middlewares/auth");
 const ROLES = require('../constants/roles');
 
 // ============ ASSIGNMENTS ============
-/**
- * Assignments endpoints breakdown:
-     - POST: Create assignment, only for lecturer
-     - PUT: Update created assignment addressing specific assignment with the id
-     - GET:'/' -> Receive all assignments that been stored in DB
-     - GET:'/:id' -> Get specific Assignment via ID
-     - GET:'/course/:courseId' -> Get assignments that linked to specific course
- **/
-
-// Create assignment (lecturer)
-router.post('/', AuthMiddleware, async (req, res) => {
+// Get all assignments
+router.get('/', authMiddleware(), async (req, res) => {
     try {
-        // User role validation
-        if (req.user.role !== ROLES.TEACHER) {
-            return res.status(403).json({error: 'Access Forbidden. You are not authorized to access this page.'});
+        let assignments;
+
+        if (req.user.role === ROLES.ADMIN) {
+            assignments = await Assignment.find();
+        } else {
+            const moduleIds = await Module.find({
+                users: req.user.id
+            }).distinct('_id');
+            assignments = await Assignment.find({
+                moduleId: { $in: moduleIds }
+            });
+        }
+        res.json(assignments);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Get single assignment
+router.get('/:id', authMiddleware(), async (req, res) => {
+    try {
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Assignment not found' });
         }
 
+        const assignment = await Assignment.findById(req.params.id);
+
+        if (!assignment) {
+            return res.status(404).json({ error: 'Assignment not found' });
+        }
+
+        res.json(assignment);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Create assignment
+router.post('/', authMiddleware([ROLES.TEACHER]), async (req, res) => {
+    try {
         // Create Assignment entity
         // Fix: whitelist fields
-        const { title, description, courseId, deadline } = req.body;
+        const { title, description, moduleId, deadline } = req.body;
 
-        if (!title || !courseId || !deadline) {
-            return res.status(400).json({error: 'Missing required fields.'});
+        if (!title || !moduleId || !deadline) {
+            return res.status(400).json({ error: 'Missing required fields.' });
+        }
+
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(moduleId)) {
+            return res.status(400).json({ error: 'Module not found' });
+        }
+        const module = await Module.findById(moduleId);
+        if (!module) {
+            return res.status(400).json({ error: 'Module not found.' });
+        }
+        if (!module.users.some(id => id.equals(req.user.id)) && req.user.role !== ROLES.ADMIN) {
+            return res.status(403).json({ message: "Access forbidden" });
         }
 
         const assignment = await Assignment.create({
             title,
             description,
-            courseId,
+            moduleId,
             deadline,
             lecturerId: req.user.id
         });
@@ -43,122 +86,189 @@ router.post('/', AuthMiddleware, async (req, res) => {
         res.status(201).json(assignment);
 
     } catch (err) {
-        // Iternal log
-        console.log(err);
-        res.status(400).json({error: 'Bad request'});
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
 // Update assignment (lecturer)
-router.put('/:id', AuthMiddleware,async (req, res) => {
-    try{
-        // User role validation
-        if (req.user.role !== ROLES.TEACHER) {
-            return res.status(403).json({error: 'Access Forbidden. You are not authorized to access this page.'});
+router.put('/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
+    try {
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Assignment not found' });
         }
 
-        // White list fields
-        const { title, description, deadline } = req.body;
+        if (req.user.role !== ROLES.ADMIN) {
+            const moduleIds = await Module.find({
+                users: req.user.id
+            }).distinct('_id');
+            const assignment = await Assignment.findOne({
+                _id: req.params.id,
+                moduleId: { $in: moduleIds }
+            });
+            if (!assignment) {
+                return res.status(404).json({ error: 'Assignment not found' });
+            }
+        }
 
-        // Get specific assignment -> update its body
-        const updated = await Assignment.findOneAndUpdate(
-            {_id: req.params.id, lecturerId: req.user.id},
-            {title, description, deadline},
-            {new: true}
+        const { title, deadline, description } = req.body;
+
+        // Build safe update object (whitelist only)
+        const updates = {};
+
+        // Update title if provided
+        if (title) {
+            if (typeof title !== 'string' || title.trim().length === 0) {
+                return res.status(400).json({ error: 'Invalid title' });
+            }
+
+            updates.title = title.trim();
+        }
+
+        // Update deadline if provided
+        if (deadline) {
+            const parsedDeadline = new Date(deadline);
+
+            if (isNaN(parsedDeadline.getTime())) {
+                return res.status(400).json({ error: 'Invalid deadline' });
+            }
+
+            updates.deadline = parsedDeadline;
+        }
+
+        // Update description if provided
+        if (description) {
+            if (typeof description !== 'string') {
+                return res.status(400).json({ error: 'Invalid description' });
+            }
+
+            updates.description = description.trim();
+        }
+
+        // Ensure at least one field is being updated
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided' });
+        }
+
+        const updatedAssignment = await Assignment.findByIdAndUpdate(
+            req.params.id,
+            updates,
+            {
+                new: true,
+                runValidators: true
+            }
         );
 
-        // Validation
-        if (!updated) {
-            return res.status(404).json({ error: 'Not found or not owner' });
+        // Check assignment exists
+        if (!updatedAssignment) {
+            return res.status(404).json({ error: 'Assignment not found' });
         }
 
-        res.json(updated);
+        res.json(updatedAssignment);
     } catch (err) {
-        console.log(err);
-        res.status(400).json({error: 'Bad request'});
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
-// Get all available assignments without any filter
-router.get('/', AuthMiddleware, async (req, res) => {
+// Delete assignment
+router.delete('/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
     try {
-        let assignments;
-
-        if (req.user.role === ROLES.ADMIN) {
-            assignments = await Assignment.find()
-
-        } else if (req.user.role === ROLES.TEACHER) {
-            assignments = await Assignment.find({ lecturerId: req.user.id });
-
-        } else {
-            // TODO temprorary allow all - later filter by enrolled courses
-            assignments = await Assignment.find()
-
-            //assignments = await Assignment.find({ courseId: { $in: req.user.courses } })
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Assignment not found' });
         }
-        res.json(assignments)
 
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({error: 'Server error'});
-    }
-})
-
-// Get assignments by course
-router.get('/course/:courseId', AuthMiddleware, async (req, res) => {
-    try {
-        const assignments = await Assignment.find({courseId: req.params.courseId});
-
-        res.json(assignments);
-
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({error: 'Server error'});
-    }
-});
-
-// Get single assignment
-router.get('/:id', AuthMiddleware, async (req, res) => {
-    try {
-        const assignment = await Assignment.findById(req.params.id);
-
+        const assignment = await Assignment.findOne({
+            _id: req.params.id
+        });
         if (!assignment) {
-            return res.status(404).json({error: 'Not found'});
+            return res.status(404).json({ error: 'Assignment not found' });
         }
 
-        res.json(assignment);
+        const module = await Module.findById(assignment.moduleId);
+        if (!module.users.some(id => id.equals(req.user.id)) && req.user.role !== ROLES.ADMIN) {
+            return res.status(403).json({ message: "Access forbidden" });
+        }
+        await assignment.deleteOne();
+        await Submission.deleteMany({ assignmentId: req.params.id });
+
+        return res.json({ message: 'Assignment deleted' });
+
     } catch (err) {
-        console.log(err);
-        res.status(400).json({error: 'Invalid ID'});
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
-
-
 
 // ================= SUBMISSIONS =================
 
-/**
- * Submissions endpoints breakdown:
-     * * Allowed to Student:
-         - POST: Attach submissions to specific assignment targeted by id
-         - PUT: Update submission attached to assignment
-         - GET:':id/submissions/me' -> Get student personal submission
-     * * Allowed to Lecturer:
-        - GET:'/:id/submissions' -> Get specific Assignment via ID
- **/
+
+
+// Get all submission
+router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
+    try {
+        if (req.user.role === ROLES.ADMIN) {
+            const assignment = await Assignment.findById(req.params.id);
+
+            if (!assignment || assignment.lectureId.toString() !== req.user.id) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+
+            // Retrieve all submissions from specific Assignments
+            const submissions = await Submission.find({
+                assignmentId: req.params.id
+            });
+
+            // Return JSON of all submissions
+            res.json(submissions);
+        }
+        else if (req.user.role === ROLES.STUDENT) {
+            const submission = await Submission.findOne({
+                assignmentId: req.params.id,
+                studentId: req.user.id
+            });
+
+            res.json(submission);
+
+        } else if (req.user.role === ROLES.TEACHER) {
+            const assignment = await Assignment.findById(req.params.id);
+
+            if (!assignment || assignment.lectureId.toString() !== req.user.id) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+
+            // Retrieve all submissions from specific Assignments
+            const submissions = await Submission.find({
+                assignmentId: req.params.id
+            });
+
+            // Return JSON of all submissions
+            res.json(submissions);
+        }
+        else {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
 
 // Submit assignment (student)
-router.post('/:id/submissions',AuthMiddleware, async (req, res) => {
+router.post('/:id/submissions', authMiddleware(), async (req, res) => {
     try {
         // Role validation
         if (req.user.role !== ROLES.STUDENT) {
-            return res.status(403).json({error: 'Forbidden'});
+            return res.status(403).json({ error: 'Forbidden' });
         }
 
         const { content } = req.body;
 
         if (!content) {
-            return res.status(400).json({error: 'Content required'});
+            return res.status(400).json({ error: 'Content required' });
         }
 
         // Get targeted Assignment module
@@ -166,12 +276,12 @@ router.post('/:id/submissions',AuthMiddleware, async (req, res) => {
 
         // Validate if "GET" method succeeded
         if (!assignment) {
-            return res.status(404).json({error: 'Assignment not found'});
+            return res.status(404).json({ error: 'Assignment not found' });
         }
 
         // Validate if submissions happens before deadline
         if (new Date() > assignment.deadline) {
-            return res.status(400).json({error: 'Deadline passed'});
+            return res.status(400).json({ error: 'Deadline passed' });
         }
 
         // If all checks pass -> Create new object
@@ -185,28 +295,27 @@ router.post('/:id/submissions',AuthMiddleware, async (req, res) => {
         res.status(201).json(submission);
 
     } catch (err) { // Catch any error
-        console.log(err);
-
-        if (err.conde === 11000){
-            return res.status(400).json({error: 'Already submitted'});
+        if (err.code === 11000) {
+            return res.status(400).json({ error: 'Already submitted' });
         }
-        res.status(400).json({error: 'Bad request'});
+
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
 // Update submission (student)
-router.put('/:id/submissions',AuthMiddleware, async (req, res) => {
-    try{
-
+router.put('/:id/submissions', authMiddleware(), async (req, res) => {
+    try {
         // Validate role permissions
         if (req.user.role !== ROLES.STUDENT) {
-            return res.status(403).json({error: 'Forbidden'});
+            return res.status(403).json({ error: 'Forbidden' });
         }
 
         const content = req.body;
 
         if (!content) {
-            return res.status(400).json({error: 'Content required'});
+            return res.status(400).json({ error: 'Content required' });
         }
 
         // Create new object from module with specific id
@@ -214,12 +323,12 @@ router.put('/:id/submissions',AuthMiddleware, async (req, res) => {
 
         // Null object validation
         if (!assignment) {
-            return res.status(404).json({error: 'Assignment not found'});
+            return res.status(404).json({ error: 'Assignment not found' });
         }
 
         // Validate deadline submission
         if (new Date() > assignment.deadline) {
-            return res.status(400).json({error: 'Deadline passed'});
+            return res.status(400).json({ error: 'Deadline passed' });
         }
 
         // Gather updated entity data
@@ -228,65 +337,43 @@ router.put('/:id/submissions',AuthMiddleware, async (req, res) => {
                 assignmentId: req.params.id,
                 studentId: req.user.id
             },
-            {content},
-            {new: true}
+            { content },
+            { new: true }
         );
 
         if (!updated) {
-            return res.status(404).json({error: 'Submission not found'});
+            return res.status(404).json({ error: 'Submission not found' });
         }
 
         // Return updated object
         res.json(updated);
     } catch (err) {
-        console.log(err);
-        res.status(400).json({error: 'Bad request'});
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
 
-// Get my submission (student)
-router.get('/:id/submissions/me', AuthMiddleware, async (req, res) => {
-    try{
-        const submission = await Submission.findOne({
-            assignmentId: req.params.id,
-            studentId: req.user.id
-        });
-
-        res.json(submission);
-    } catch (err) {
-        console.log(err);
-        res.status(400).json({error: 'Bad request'});
-    }
-});
-
-
-// Get all submissions (lecturer)
-router.get('/:id/submissions', AuthMiddleware, async (req, res) => {
+// Delete submission
+router.delete('/submissions/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
     try {
-        // Validate role permissions
-        if (req.user.role !== ROLES.TEACHER) {
-            return res.status(403).json({error: 'Forbidden'});
+        // Id format validation
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Invalid ID' });
         }
 
-        const assignment = await Assignment.findById(req.params.id);
+        const deleted = await Submission.findByIdAndDelete(req.params.id);
 
-        if (!assignment || assignment.lectureId.toString() !== req.user.id) {
-            return res.status(403).json({error: 'Forbidden'});
+        // submission existence validation
+        if (!deleted) {
+            return res.status(404).json({ error: 'Submission not found' });
         }
 
-        // Retrieve all submissions from specific Assignments
-        const submissions = await Submission.find({
-            assignmentId: req.params.id
-        });
-
-        // Return JSON of all submissions
-        res.json(submissions);
+        res.json({ message: 'Submission deleted' });
 
     } catch (err) {
-        console.log(err);
-        res.status(400).json({error: 'Bad request'});
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
     }
 });
-
 
 module.exports = router;

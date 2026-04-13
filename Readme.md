@@ -77,7 +77,7 @@ Server running on port 5000
 Connected to Database
 ```
 
-If you're seeing this, everything works fine. 
+If you're seeing this, everything works fine.
 You ready for development and testing
 
 For healthy shutdown of containers, use
@@ -85,7 +85,7 @@ For healthy shutdown of containers, use
 docker compose down
 ```
 
-### Debugging 
+### Debugging
 If any errors occur, try to run docker in debug mode
 
 ```bash

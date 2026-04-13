@@ -1,0 +1,15 @@
+info:
+  name: 8. Delete created assignments
+  type: http
+  seq: 8
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/assignments/69dbcfb4aa372e0a3e5f4287"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

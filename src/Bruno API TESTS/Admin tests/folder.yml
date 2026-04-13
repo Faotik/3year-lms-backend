@@ -1,0 +1,7 @@
+info:
+  name: Admin tests
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

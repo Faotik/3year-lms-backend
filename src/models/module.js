@@ -5,15 +5,12 @@ const moduleSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    sections: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Section'
-        }
-    ],
     description: {
         type: String
-    }
+    },
+    users: {
+        type: [mongoose.Schema.Types.ObjectId],
+    },
 })
 
 

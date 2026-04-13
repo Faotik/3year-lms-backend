@@ -1,0 +1,15 @@
+info:
+  name: get all modules for student
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/modules/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
