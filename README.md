@@ -121,7 +121,7 @@ Create `.env` in repository root (see [Environment Variables](#6-environment-var
 docker compose up -d
 ```
 
-### Optional seed data
+### Optionally seed data
 
 ```bash
 npm run seeddb
@@ -141,7 +141,7 @@ DB_HOST=localhost
 DB_PORT=27017
 DB_NAME=moodle
 
-# used by test.js who works with separe Database to keep test and prod Databases isolated 
+# used by test.js which works with separe Database to keep test and prod Databases isolated 
 DB_NAME_TEST=moodle_test
 
 ```
@@ -174,7 +174,25 @@ npm start
 
 - `http://localhost:5000/api` (or your configured `PORT`)
 
-## 8. Database Models
+## 8. Authentication
+
+### ~~JWT~~ (Depricated)
+Upon logging in, cookies with access and refresh tokens are set, which are then sent with every subsequent request.
+The authentication middleware reads the access token and verifies it with the key stored on the server that was used to generate that token.
+If the access token is valid, the user is granted access to the endpoint. To identify the user, the access token contains their ID and role,
+so it can be used to verify whether the user has access to a specific resource.
+The access token is not stored in the database, therefore, to increase user security, the access token has a short expiration time (15 minutes).
+If the access token has expired, user can use their refresh token to obtain a new access token. Unlike the access token, the refresh token is stored in the database, so it can be revoked at any time if the user’s account is compromised.
+
+### Session
+Upon logging in, a cookie with session ID is set, which is then sent with every subsequent request.
+The authentication middleware reads the session ID and gets the corresponding entry in the server’s memory that matches this ID. Using this information,
+we can retrieve the stored user ID and the role associated with that session ID. All user information is stored on the server and
+can be immediately updated to reflect any changes we make.
+
+#### Note: JWT authentication has been depricated in favor of Session based authentication as it provides better security for our users.
+
+## 9. Database Models
 
 ### User Model (`src/models/user.js`)
 
@@ -220,7 +238,136 @@ npm start
 - **Constraints**: unique compound index on `{ assignmentId, studentId }` (one submission per student per assignment).
 - **Timestamps**: enabled (`createdAt`, `updatedAt`).
 
-## 9. API Endpoints
+## 10. Endpoints testing
+Project includes 2 ways for testing of all endpoits - [Manual](#manual-tests) and [Automatic](#automatic-tests)
+
+### Manual tests
+For manual testing we provide pre-configured list of endpoind for Bruno (api testing software).
+To test endpoints, start the server:
+```bash
+npm run dev
+```
+And use bruno to send requests to the server and see what responces you will get simulating how frontend will send request to a server in procution enviroment.
+
+### Automatic tests
+For automatic tests we have setup script using Jest and Supertest that will run a number of requests to our server and check if it return correct values.
+To start tests use:
+```bash
+npm run test
+```
+```
+ PASS  src/tests/test.js (20.144 s)
+  /api
+    /auth
+      POST /login
+        ✓ should fail to login with wrong password (303 ms)
+        ✓ should succeed to login (267 ms)
+      POST /logout
+        ✓ should fail to logout without login first (224 ms)
+        ✓ should succeed to logout (271 ms)
+    /users
+      GET /
+        ✓ should fail to get all users without login (223 ms)
+        ✓ should fail to get all users without admin role (266 ms)
+        ✓ should succeed to get all users (273 ms)
+      GET /:id
+        ✓ should fail to get user without login (228 ms)
+        ✓ should fail to get user without admin role or being that user (272 ms)
+        ✓ should succeed to get user if you admin (291 ms)
+        ✓ should succeed to get user if you are that user (277 ms)
+      POST /
+        ✓ should fail to create user without login (225 ms)
+        ✓ should fail to create user without admin role (275 ms)
+        ✓ should fail to create user without all details (266 ms)
+        ✓ should fail to create user with incorrect email (270 ms)
+        ✓ should fail to create user with the email that aleady exists (315 ms)
+        ✓ should succeed to create user (310 ms)
+      PUT /:id
+        ✓ should fail to update user without login (228 ms)
+        ✓ should fail to update user without admin role or being that user (271 ms)
+        ✓ should fail to update user with incorrect id (266 ms)
+        ✓ should fail to update user with incorrect email (270 ms)
+        ✓ should fail to update user with the email that aleady exists (272 ms)
+        ✓ should succeed to update user (271 ms)
+      DELETE /:id
+        ✓ should fail to delete user without login (226 ms)
+        ✓ should fail to delete user without admin role (265 ms)
+        ✓ should fail to delete user with incorrect id (267 ms)
+        ✓ should fail to delet last admin (265 ms)
+        ✓ should succeed to delete user by admin (275 ms)
+    /preferences
+      GET /theme
+        ✓ should fail to get theme without login (226 ms)
+        ✓ should succeed to get user theme (273 ms)
+      POST /theme
+        ✓ should fail to update theme without login (221 ms)
+        ✓ should fail to update preference with invalid theme (272 ms)
+        ✓ should succeed to update user theme (274 ms)
+    /modules
+      GET /
+        ✓ should fail to get all modules without login (227 ms)
+        ✓ should succeed to get all user's modules (272 ms)
+        ✓ should succeed to get all modules by admin (272 ms)
+      GET /:id
+        ✓ should fail to get module without login (234 ms)
+        ✓ should fail to get module with incorrect id (273 ms)
+        ✓ should fail to get module if user doesn't has access (266 ms)
+        ✓ should succeed to get module if user has access (270 ms)
+      GET /:id/assignments
+        ✓ should fail to get all assignments without login (223 ms)
+        ✓ should succeed to get all modules assignments (268 ms)
+      POST /
+        ✓ should fail to create module without login (220 ms)
+        ✓ should fail to create module without admin role (268 ms)
+        ✓ should fail to create module without title (264 ms)
+        ✓ should succeed to create module (271 ms)
+      PUT /:id
+        ✓ should fail to update module without login (220 ms)
+        ✓ should fail to update user without admin role (272 ms)
+        ✓ should fail to update module with incorrect id (268 ms)
+        ✓ should succeed to update module (269 ms)
+      DELETE /:id
+        ✓ should fail to delete module without login (223 ms)
+        ✓ should fail to delete user without admin role (264 ms)
+        ✓ should fail to delete module with incorrect id (261 ms)
+        ✓ should succeed to delete module by admin (274 ms)
+    /assignments
+      GET /
+        ✓ should fail to get all assignments without login (222 ms)
+        ✓ should succeed to get all assignments by teacher (262 ms)
+        ✓ should succeed to get all assignments by admin (263 ms)
+      GET /:id
+        ✓ should fail to get assignment without login (224 ms)
+        ✓ should fail to get assignment with invalide id (267 ms)
+        ✓ should succeed to get an assignment (267 ms)
+      POST /
+        ✓ should fail to create an assignment without login (224 ms)
+        ✓ should fail to creating an assignment by student (278 ms)
+        ✓ should fail to creating an assignment with incorrect details (278 ms)
+        ✓ should succeed to create an assignmen by teacher (274 ms)
+        ✓ should succeed to create an assignmen by admin (270 ms)
+      PUT /:id
+        ✓ should fail to update assignment without login (224 ms)
+        ✓ should fail to update assignment without teacher role (268 ms)
+        ✓ should fail to update assignment with incorrect id (267 ms)
+        ✓ should fail to update assignment by incorrect teacher (273 ms)
+        ✓ should succeed to update assignment by teacher (275 ms)
+        ✓ should succeed to update assignment by admin (265 ms)
+      DELETE /:id
+        ✓ should fail to delete assignment without login (221 ms)
+        ✓ should fail to delete assignment by incorrect teacher (269 ms)
+        ✓ should fail to delete assignment with incorrect id (266 ms)
+        ✓ should succeed to delete assignment by teacher (276 ms)
+        ✓ should succeed to delete assignment by admin (271 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       76 passed, 76 total
+Snapshots:   0 total
+Time:        20.176 s, estimated 44 s
+Ran all test suites.
+```
+
+## 11. API Endpoints
 
 All endpoints are mounted under `/api`.
 
@@ -247,7 +394,7 @@ All endpoints are mounted under `/api`.
 |--------|--------------------------------|------------------------------------------------------------------------|----------------------------|------------------------------------------|
 | GET    | `/api/modules`                 | List modules (all for admin, membership-filtered for others)           | Authenticated              | none                                     |
 | GET    | `/api/modules/:id`             | Get one module                                                         | Authenticated + role:admin | none                                     |
-| GET    | `/api/modules/assignments/:id` | Returns all assignents linked to this module (endpoint broken in code) | Authenticated + role:admin | none                                     |
+| GET    | `/api/modules/:id/assignments` | Returns all assignents linked to this module (endpoint broken in code) | Authenticated + role:admin | none                                     |
 | POST   | `/api/modules`                 | Create module                                                          | Admin                      | `title`, optional `description`          |
 | PUT    | `/api/modules/:id`             | Update module                                                          | Admin                      | optional `title`, `description`, `users` |
 | DELETE | `/api/modules/:id`             | Delete module                                                          | Admin                      | none                                     |
@@ -287,7 +434,7 @@ All endpoints are mounted under `/api`.
 |--------|------------------------|------------------------------------------------------------|--------|
 | GET    | `/api/admin/statistic` | Platform statistic (users/modules/assignments/submissions) | Admin  |
 
-## 10. Request / Response Models
+## 12. Request / Response Models
 
 ### Login
 
@@ -370,7 +517,7 @@ Example response shape for updated user:
 }
 ```
 
-## 11. Security & Validation
+## 13. Security & Validation
 
 - **Auth mechanism**: Initial was based on JWT token, then replaced by session-based auth (`express-session` +
   `connect-mongo`).
@@ -390,10 +537,23 @@ Example response shape for updated user:
     - Database-level unique index on submission `(assignmentId, studentId)`.
     - Student dashboard also checks existing submission before create.
 
-## 12. Team Contributions
+## 14. Team Contributions
 
-| Member            | Student Number | Contribution   |
-|-------------------|----------------|----------------|
-| `Roman Polishcuk` |                | somehting here |
-| `Kornii Kuvaldin` |                | somehting here |
-| `Stanislav Kril`  | 3133810        | somehting here |
+| Member            | Student Number |
+|-------------------|----------------|
+| `Roman Polishcuk` | 3135838        |
+| `Kornii Kuvaldin` |                |
+| `Stanislav Kril`  | 3133810        |
+
+Contribution
+- Project setup and DB connection (docker) - `Roman Polishcuk`
+- Registration, authentication (JWT + Session), authorization - `Roman Polishchuk`
+- API assignments + submitions - `Stanislav Kril, Roman Polishchuk`
+- API modules - `Kornii Kuvaldin`
+- API users - `Kornii Kuvaldin`
+- API preferences - `Roman Polishchuk`
+- API calandar - `Stanislav Kril`
+- DB seeding - `Stanislav Kril, Roman Polishchuk`
+- Manual Tests (Bruno) - `Stanislav Kril`
+- Automatic Tests (jest + supertest) - `Roman Polishchuk`
+- Documantation (Readme.md) - `Stanislav Kril`
