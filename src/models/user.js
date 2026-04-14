@@ -1,4 +1,6 @@
 const mongoose = require('mongoose')
+const ROLES = require('../constants/roles');
+const THEMES = require('../constants/themes');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -19,10 +21,15 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['user', 'teacher', 'admin'],
+    enum: Object.values(ROLES),
   },
-  refreshTokens: {
-    type: [String]
+  preferences: {
+    theme: {
+      type: String,
+      required: true,
+      enum: Object.values(THEMES),
+      default: THEMES.LIGHT,
+    }
   }
 })
 

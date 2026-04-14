@@ -1,0 +1,15 @@
+info:
+  name: 10. Delete submission by id
+  type: http
+  seq: 10
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/assignments/submissions/{{submission_id}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

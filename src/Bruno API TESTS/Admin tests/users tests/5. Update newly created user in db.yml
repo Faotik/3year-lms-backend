@@ -1,0 +1,24 @@
+info:
+  name: 5. Update newly created user in db
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/users/69dbc93e5a7df7aec3c52419"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Updated Name", 
+        "email": "newMail@email.com", 
+        "password": "540", 
+        "role": "student"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
