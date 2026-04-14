@@ -10,6 +10,10 @@ const assignmentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },
+    lecturerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     deadline: {
         type: Date,
         required: true
