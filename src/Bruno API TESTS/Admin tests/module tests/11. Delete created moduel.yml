@@ -1,0 +1,15 @@
+info:
+  name: 11. Delete created moduel
+  type: http
+  seq: 11
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/modules/69dbc1b44639404e7f2c23a5"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

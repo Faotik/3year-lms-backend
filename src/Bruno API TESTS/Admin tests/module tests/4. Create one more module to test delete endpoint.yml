@@ -1,0 +1,22 @@
+info:
+  name: 4. Create one more module to test delete endpoint
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/modules"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "toDelete",
+        "description" : "toDelete"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
