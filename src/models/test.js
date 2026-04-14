@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const assignmentSchema = new mongoose.Schema({
+const testSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true
@@ -26,4 +26,4 @@ const assignmentSchema = new mongoose.Schema({
     timestamps: true
 });
 
-module.exports = mongoose.model('Assignment', assignmentSchema);
+module.exports = mongoose.model('Test', testSchema);
