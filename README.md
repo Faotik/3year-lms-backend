@@ -163,7 +163,7 @@ SESSION_SECRET=replace_with_secure_random_string
 
 DB_USERNAME=root
 DB_PASSWORD=example
-MONGODB_URI
+MONGODB_URI=uri
 
 DB_HOST=localhost
 DB_PORT=27017
@@ -695,15 +695,16 @@ Example response shape for updated user:
 Contribution
 - Project setup and DB connection (docker) - `Roman Polishcuk`
 - Registration, authentication (JWT + Session), authorization - `Roman Polishchuk`
-- API preferences - `Roman Polishchuk`
-- Automatic Tests (jest + supertest) - `Roman Polishchuk`
-- API assignments + submitions - `Stanislav Kril, Roman Polishchuk`
 - DB seeding - `Stanislav Kril, Roman Polishchuk`
+- API preferences - `Roman Polishchuk`
+- API assignments + submitions - `Stanislav Kril, Roman Polishchuk`
 - API modules - `Kornii Kuvaldin`
 - API users - `Kornii Kuvaldin`
 - API graphs - `Kornii Kuvaldin`
 - API calandar - `Stanislav Kril`
+- API class tests - `Roman Polishchuk`
 - Manual Tests (Bruno) - `Stanislav Kril`
+- Automatic Tests (jest + supertest) - `Roman Polishchuk`
 - Documantation (Readme.md) - `Stanislav Kril`
 - Database Migratrion (Docker -> MongoDB Atlas) -`Stanislav Kril`
 - Project host (render.com) -`Stanislav Kril`
@@ -717,3 +718,6 @@ https://threeyear-moodle-backend.onrender.com
 ## 16. Reference
 - https://www.albertgao.com/2017/05/24/how-to-test-expressjs-with-jest-and-supertest/
 - https://www.youtube.com/watch?v=FKnzS_icp20
+- https://www.youtube.com/watch?v=mbsmsi7l3r4&t=
+- https://www.youtube.com/watch?v=k1GjLMgz8OQ
+- https://www.mongodb.com/docs/v7.0/tutorial/install-mongodb-community-with-docker/
