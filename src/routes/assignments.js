@@ -31,7 +31,7 @@ router.get('/', authMiddleware(), async (req, res) => {
     }
 });
 
-// Get single assignment
+//
 router.get('/:id', authMiddleware(), async (req, res) => {
     try {
         // Validate ID
@@ -212,16 +212,14 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
         if (req.user.role === ROLES.ADMIN) {
             const assignment = await Assignment.findById(req.params.id);
 
-            if (!assignment || assignment.lectureId.toString() !== req.user.id) {
-                return res.status(403).json({ error: 'Forbidden' });
+            if (!assignment) {
+                return res.status(404).json({ error: 'Assignment not found' });
             }
 
-            // Retrieve all submissions from specific Assignments
             const submissions = await Submission.find({
                 assignmentId: req.params.id
             });
 
-            // Return JSON of all submissions
             res.json(submissions);
         }
         else if (req.user.role === ROLES.STUDENT) {
@@ -235,7 +233,7 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
         } else if (req.user.role === ROLES.TEACHER) {
             const assignment = await Assignment.findById(req.params.id);
 
-            if (!assignment || assignment.lectureId.toString() !== req.user.id) {
+            if (!assignment || !assignment.lecturerId || !assignment.lecturerId.equals(req.user.id)) {
                 return res.status(403).json({ error: 'Forbidden' });
             }
 
