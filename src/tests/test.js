@@ -7,6 +7,8 @@ const ROLES = require("../constants/roles");
 const User = require('../models/user');
 const Module = require('../models/module');
 const Assignment = require('../models/assignment');
+const Test = require('../models/classTest');
+const TestSubmission = require('../models/testSubmission');
 
 //Connect to db
 beforeAll(async () => {
@@ -64,6 +66,35 @@ beforeEach(async () => {
         description: "Desc 2",
         moduleId: module1.id,
         deadline: new Date(Date.now() + 100000),
+    });
+
+    await Test.create({
+        title: "Test 1",
+        description: "Desc 1",
+        moduleId: module1.id,
+        deadline: new Date(Date.now() + 100000),
+        questions: [
+            {
+                question: "Q1",
+                options: ["A", "B", "C"],
+                correctAnswer: "A",
+                marks: 5
+            }
+        ]
+    });
+    await Test.create({
+        title: "Test 2",
+        description: "Desc 2",
+        moduleId: module2.id,
+        deadline: new Date(Date.now() + 100000),
+        questions: [
+            {
+                question: "Q2",
+                options: ["A", "B", "C"],
+                correctAnswer: "B",
+                marks: 10
+            }
+        ]
     });
 });
 
@@ -1144,6 +1175,379 @@ describe("/api", () => {
 
                 const deleted_assignment = await Assignment.findById(assignment.id);
                 expect(deleted_assignment).toBeNull();
+            });
+        });
+    });
+    describe("/tests", () => {
+        describe("GET /", () => {
+            it("should fail to get all tests without login", async () => {
+                const route = request.agent(app);
+
+                const res = await route
+                    .get("/api/tests");
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should succeed to get all tests by teacher", async () => {
+                const route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email3@email.com", password: "1" });
+                const res = await route
+                    .get("/api/tests/");
+
+                expect(res.statusCode).toBe(200);
+                expect(Array.isArray(res.body)).toBe(true);
+                expect(res.body.length).toBe(2);
+                expect(res.body[0].questions[0].correctAnswer).toBeDefined();
+            });
+            it("should succeed to get test by admin", async () => {
+                const route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .get("/api/tests/");
+
+                expect(res.statusCode).toBe(200);
+                expect(Array.isArray(res.body)).toBe(true);
+                expect(res.body.length).toBe(2);
+                expect(res.body[0].questions[0].correctAnswer).toBeDefined();
+            });
+            it("should succeed to get all tests by student", async () => {
+                const route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route
+                    .get("/api/tests/");
+
+                expect(res.statusCode).toBe(200);
+                expect(Array.isArray(res.body)).toBe(true);
+                expect(res.body.length).toBe(1);
+                expect(res.body[0].questions[0].correctAnswer).toBeUndefined();
+            });
+        });
+        describe("GET /:id", () => {
+            it("should fail to get test without login", async () => {
+                const route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                const res = await route
+                    .get(`/api/tests/${test.id}`);
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to get test with invalide id", async () => {
+                const route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email2@email.com", password: "1" });
+                const res = await route
+                    .get("/api/tests/-1");
+
+                expect(res.statusCode).toBe(404);
+            });
+            it("should succeed to get a test", async () => {
+                const route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route
+                    .get(`/api/tests/${test.id}`);
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body.title).toBe("Test 1");
+                expect(res.body.description).toBe("Desc 1");
+                expect(res.body.deadline).toBeDefined();
+                expect(res.body.questions[0].correctAnswer).toBeUndefined();
+            });
+        });
+        describe("POST /", () => {
+            it("should fail to create a test without login", async () => {
+                const route = request.agent(app);
+
+                const module = await Module.findOne();
+
+                const res = await route
+                    .post("/api/tests")
+                    .send({
+                        title: "NewTitle",
+                        moduleId: module.id,
+                        deadline: new Date(Date.now() + 100000),
+                        questions: [
+                            {
+                                question: "Q",
+                                options: ["A", "B", "C", "D"],
+                                correctAnswer: "A",
+                                marks: 5
+                            }
+                        ]
+                    });
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to creating a test by student", async () => {
+                const route = request.agent(app);
+
+                const module = await Module.findOne();
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route
+                    .post("/api/tests")
+                    .send({
+                        title: "NewTitle",
+                        moduleId: module.id,
+                        deadline: new Date(Date.now() + 100000),
+                        questions: [
+                            {
+                                question: "Q",
+                                options: ["A", "B", "C", "D"],
+                                correctAnswer: "A",
+                                marks: 5
+                            }
+                        ]
+                    });
+                expect(res.statusCode).toBe(403);
+            });
+            it("should fail to creating an assignment with incorrect details", async () => {
+                const route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email3@email.com", password: "1" });
+                const res = await route
+                    .post("/api/tests")
+                    .send({
+                        title: "NewTitle",
+                        moduleId: -1,
+                        deadline: new Date(Date.now() + 100000)
+                    });
+                expect(res.statusCode).toBe(400);
+            });
+            it("should succeed to create an test by teacher", async () => {
+                const route = request.agent(app);
+
+                const module = await Module.findOne();
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email3@email.com", password: "1" });
+                const res = await route
+                    .post("/api/tests")
+                    .send({
+                        title: "NewTitle",
+                        moduleId: module.id,
+                        deadline: new Date(Date.now() + 100000),
+                        questions: [
+                            {
+                                question: "Q",
+                                options: ["A", "B", "C", "D"],
+                                correctAnswer: "A",
+                                marks: 5
+                            }
+                        ]
+                    });
+
+                expect(res.statusCode).toBe(201);
+                expect(res.body.title).toBe("NewTitle");
+                expect(res.body.description).toBeUndefined()
+                expect(res.body.deadline).toBeDefined();
+                expect(res.body.questions).toBeDefined();
+            });
+            it("should succeed to create a test by admin", async () => {
+                const route = request.agent(app);
+
+                const module = await Module.findOne();
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .post("/api/tests")
+                    .send({
+                        title: "NewTitle",
+                        moduleId: module.id,
+                        deadline: new Date(Date.now() + 100000),
+                        questions: [
+                            {
+                                question: "Q",
+                                options: ["A", "B", "C", "D"],
+                                correctAnswer: "A",
+                                marks: 5
+                            }
+                        ]
+                    });
+
+                expect(res.statusCode).toBe(201);
+                expect(res.body.title).toBe("NewTitle");
+                expect(res.body.description).toBeUndefined()
+                expect(res.body.deadline).toBeDefined();
+                expect(res.body.questions).toBeDefined();
+            });
+        });
+        describe("PUT /:id", () => {
+            it("should fail to update tests without login", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                const res = await route
+                    .put(`/api/tests/${test.id}`)
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to update test without teacher role", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email1@email.com", password: "1" });
+                const res = await route
+                    .put(`/api/tests/${test.id}`)
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(403);
+            });
+            it("should fail to update test with incorrect id", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+
+                const res = await route
+                    .put("/api/tests/-1")
+                    .send({ title: "NewTitle" });
+                expect(res.statusCode).toBe(404);
+            });
+            it("should fail to update test by incorrect teacher", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email4@email.com", password: "1" });
+                const res = await route
+                    .put(`/api/tests/${test.id}`)
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(404);
+            });
+            it("should succeed to update test by teacher", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email3@email.com", password: "1" });
+                const res = await route
+                    .put(`/api/tests/${test.id}`)
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body.title).toBe("NewTitle");
+                expect(res.body.description).toBe(test.description);
+            });
+
+            it("should succeed to update test by admin", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .put(`/api/tests/${test.id}`)
+                    .send({ title: "NewTitle" });
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body.title).toBe("NewTitle");
+                expect(res.body.description).toBe(test.description);
+            });
+        });
+        describe("DELETE /:id", () => {
+            it("should fail to delete test without login", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                const res = await route
+                    .delete(`/api/tests/${test.id}`);
+
+                expect(res.statusCode).toBe(401);
+            });
+            it("should fail to delete test by incorrect teacher", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email4@email.com", password: "1" });
+                const res = await route
+                    .delete(`/api/tests/${test.id}`);
+
+                expect(res.statusCode).toBe(403);
+            });
+            it("should fail to delete test with incorrect id", async () => {
+                let route = request.agent(app);
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .delete("/api/tests/-1");
+
+                expect(res.statusCode).toBe(404);
+            });
+            it("should succeed to delete test by teacher", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email3@email.com", password: "1" });
+                const res = await route
+                    .delete(`/api/tests/${test.id}`);
+
+                expect(res.statusCode).toBe(200);
+
+                const deleted_test = await Test.findById(Test.id);
+                expect(deleted_test).toBeNull();
+            });
+            it("should succeed to delete test by admin", async () => {
+                let route = request.agent(app);
+
+                const test = await Test.findOne({ title: "Test 1" });
+
+                await route
+                    .post("/api/auth/login")
+                    .send({ email: "email5@email.com", password: "1" });
+                const res = await route
+                    .delete(`/api/tests/${test.id}`);
+
+                expect(res.statusCode).toBe(200);
+
+                const deleted_test = await Test.findById(test.id);
+                expect(deleted_test).toBeNull();
             });
         });
     });
