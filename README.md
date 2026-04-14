@@ -721,3 +721,12 @@ https://threeyear-moodle-backend.onrender.com
 - https://www.youtube.com/watch?v=mbsmsi7l3r4&t=
 - https://www.youtube.com/watch?v=k1GjLMgz8OQ
 - https://www.mongodb.com/docs/v7.0/tutorial/install-mongodb-community-with-docker/
+- https://expressjs.com/en/guide/routing.html
+- https://mongoosejs.com/docs/guide.html
+- https://github.com/expressjs/session#readme
+- https://render.com/docs/deploy-node-express-app
+- https://www.mongodb.com/docs/atlas/
+- https://docs.usebruno.com/send-requests/REST/overview
+- https://github.com/forwardemail/supertest#readme
+- https://jestjs.io/docs/getting-started
+- https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
