@@ -1,0 +1,24 @@
+info:
+  name: update submition
+  type: http
+  seq: 7
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/tests/69dd9be39cc358495ec6521d/submissions"
+  body:
+    type: json
+    data: |-
+      {
+        "answers": [
+          { "questionNumber": 0, "answer": "2" },
+          { "questionNumber": 1, "answer": "fajdwhfldsjkfdasl" }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

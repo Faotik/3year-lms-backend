@@ -5,12 +5,12 @@ info:
 
 http:
   method: PUT
-  url: "{{baseUrl}}/modules/69dbc1a64639404e7f2c23a3"
+  url: "{{baseUrl}}/modules/69dd81eae8a0e846f5325f96"
   body:
     type: json
     data: |-
       {
-        "users": ["69dbbf9fd05a16865bb50ba9","69dbbf9fd05a16865bb50ba5"]
+        "users": ["69dd81d08a3a36160bc7bba1","69dd81d08a3a36160bc7bb9f","69dd81d08a3a36160bc7bb9d"]
       }
   auth: inherit
 
