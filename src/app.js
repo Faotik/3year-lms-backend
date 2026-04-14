@@ -6,6 +6,7 @@ const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const assignmentRoutes = require('./routes/assignments');
 const modulesRoutes = require('./routes/modules');
+const graphsRoutes = require('./routes/graphs');
 
 const app = express();
 
@@ -28,5 +29,6 @@ app.use('/auth', authRouter);
 app.use('/users', usersRouter);
 app.use('/assignments', assignmentRoutes);
 app.use('/modules', modulesRoutes);
+app.use('/graphs', graphsRoutes);
 
 module.exports = app;
