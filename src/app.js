@@ -10,6 +10,7 @@ const assignmentRoutes = require('./routes/assignments');
 const preferencesRoutes = require('./routes/preferences');
 const adminDashboard = require('./routes/adminDashboard');
 const modulesRoutes = require('./routes/modules');
+const graphsRoutes = require('./routes/graphs');
 const calendarRoutes = require('./routes/calendar');
 const testRoutes = require('./routes/tests');
 
@@ -44,6 +45,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/preferences', preferencesRoutes);
+app.use('/graphs', graphsRoutes);
 
 app.use('/api/admin', adminDashboard);
 
@@ -51,6 +53,5 @@ app.use('/api/modules', modulesRoutes);
 app.use('/api/calendar', calendarRoutes);
 
 app.use('/api/tests', testRoutes);
-
 
 module.exports = app;

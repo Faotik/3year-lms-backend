@@ -877,7 +877,7 @@ describe("/api", () => {
 
                 await route
                     .post("/api/auth/login")
-                    .send({ email: "email1@email.com", password: "1" });
+                    .send({ email: "email2@email.com", password: "1" });
                 const res = await route
                     .get("/api/assignments/-1");
 
@@ -890,7 +890,7 @@ describe("/api", () => {
 
                 await route
                     .post("/api/auth/login")
-                    .send({ email: "email1@email.com", password: "1" });
+                    .send({ email: "email2@email.com", password: "1" });
                 const res = await route
                     .get(`/api/assignments/${assignment.id}`);
 
