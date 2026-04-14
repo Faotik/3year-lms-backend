@@ -689,7 +689,7 @@ Example response shape for updated user:
 | Member            | Student Number |
 |-------------------|----------------|
 | `Roman Polishcuk` | 3135838        |
-| `Kornii Kuvaldin` |                |
+| `Kornii Kuvaldin` | 3134926        |
 | `Stanislav Kril`  | 3133810        |
 
 Contribution
