@@ -701,12 +701,12 @@ Contribution
 - API modules - `Kornii Kuvaldin`
 - API users - `Kornii Kuvaldin`
 - API graphs - `Kornii Kuvaldin`
-- API calandar - `Stanislav Kril`
+- API calendar - `Stanislav Kril`
 - API class tests - `Roman Polishchuk`
 - Manual Tests (Bruno) - `Stanislav Kril`
 - Automatic Tests (jest + supertest) - `Roman Polishchuk`
-- Documantation (Readme.md) - `Stanislav Kril`
-- Database Migratrion (Docker -> MongoDB Atlas) -`Stanislav Kril`
+- Documentation (Readme.md) - `Stanislav Kril`
+- Database Migration (Docker -> MongoDB Atlas) -`Stanislav Kril`
 - Project host (render.com) -`Stanislav Kril`
 
 ## 15. Project Deployment
