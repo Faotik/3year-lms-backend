@@ -20,4 +20,4 @@ const testSubmissionSchema = new mongoose.Schema({
 // Only one submission per student per test
 testSubmissionSchema.index({ testId: 1, studentId: 1 }, { unique: true });
 
-module.exports = mongoose.model('Submission', testSubmissionSchema);
+module.exports = mongoose.model('TestSubmission', testSubmissionSchema);
