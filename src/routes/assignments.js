@@ -31,7 +31,7 @@ router.get('/', authMiddleware(), async (req, res) => {
     }
 });
 
-// Get single assignment
+//
 router.get('/:id', authMiddleware(), async (req, res) => {
     try {
         // Validate ID
@@ -215,12 +215,10 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
                 return res.status(404).json({ error: 'Assignment not found' });
             }
 
-            // Retrieve all submissions from specific Assignments
             const submissions = await Submission.find({
                 assignmentId: req.params.id
             });
 
-            // Return JSON of all submissions
             res.json(submissions);
         }
         else if (req.user.role === ROLES.STUDENT) {
