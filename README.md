@@ -20,6 +20,8 @@ role-based access for students, teachers, and admins.
 - [12. Request / Response Models](#12-request--response-models)
 - [13. Security & Validation](#13-security--validation)
 - [14. Team Contributions](#14-team-contributions)
+- [15. Project Deployment](#15-project-deployment)
+- [16. Reference](#16-reference)
 
 ## 2. Project Overview
 
@@ -75,6 +77,8 @@ role-based access for students, teachers, and admins.
     ├── models/
     │   ├── user.js
     │   ├── module.js
+    │   ├── classTest.js
+    │   ├── testSubmission.js
     │   ├── assignment.js
     │   └── submission.js
     ├── routes/
@@ -85,6 +89,8 @@ role-based access for students, teachers, and admins.
     │   ├── assignments.js
     │   ├── preferences.js
     │   ├── adminDashboard.js
+    │   ├── tests.js
+    │   ├── graphs.js
     │   └── calendar.js
     ├── utils/
     │   └── seedDatabase.js
@@ -132,11 +138,14 @@ Create `.env` in repository root (see [Environment Variables](#6-environment-var
 ### MongoDB setup options
 
 - **Option A: Local MongoDB instance**
+
 - **Option B: Docker Compose**
 
 ```bash
 docker compose up -d
 ```
+
+note: Docker compose no longer supported as database migrated to cloud.
 
 ### Optionally seed data
 
@@ -154,6 +163,8 @@ SESSION_SECRET=replace_with_secure_random_string
 
 DB_USERNAME=root
 DB_PASSWORD=example
+MONGODB_URI
+
 DB_HOST=localhost
 DB_PORT=27017
 DB_NAME=moodle
@@ -170,6 +181,14 @@ Variable details:
 - `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME`: primary MongoDB connection (`src/server.js`,
   `src/app.js`, `src/utils/seedDatabase.js`).
 - `DB_NAME_TEST`: test database (`src/tests/test.js`).
+
+After Migrating to MongoDB Atlas, fields DB_USERNAME, DB_PASSWORD , MONGODB_URI become main concern.
+<br>In order to keep project up and running connection should pass, so fields should be installed to:
+```env
+DB_USERNAME=hijlnotfound_db_user
+DB_PASSWORD=kobKMr4GyHq3nkQC
+MONGODB_URI=mongodb+srv://hijlnotfound_db_user:kobKMr4GyHq3nkQC@cluster0.eurilhk.mongodb.net/?appName=Cluster0
+```
 
 All needed .env parameters stored in .env.template. You can duplicate, and rename it into the .env file.
 
@@ -190,6 +209,12 @@ npm start
 ### Local base URL
 
 - `http://localhost:5000/api` (or your configured `PORT`)
+
+### Remote base URL
+
+```link
+https://threeyear-moodle-backend.onrender.com
+```
 
 ## 8. Authentication
 
@@ -253,6 +278,35 @@ can be immediately updated to reflect any changes we make.
     - `content`: `String`, required
 - **Relationships**: implicit assignment + user references via IDs.
 - **Constraints**: unique compound index on `{ assignmentId, studentId }` (one submission per student per assignment).
+- **Timestamps**: enabled (`createdAt`, `updatedAt`).
+
+### Test Model (`src/models/classTest.js`)
+
+- **Purpose**: test/quiz definition linked to a module.
+- **Fields**:
+    - `title`: `String`, required
+    - `description`: `String`
+    - `moduleId`: `ObjectId`, required
+    - `deadline`: `Date`, required
+    - `questions[]`:
+        - `question`: `String`
+        - `options`: `String[]`
+        - `correctAnswer`: `String`
+        - `marks`: `Number`
+- **Relationships**: implicit module relation via `moduleId`.
+- **Timestamps**: enabled (`createdAt`, `updatedAt`).
+
+### Test Submission Model (`src/models/testSubmission.js`)
+
+- **Purpose**: student answers submission for a test.
+- **Fields**:
+    - `testId`: `ObjectId`, required
+    - `studentId`: `ObjectId`, required
+    - `answers[]`:
+        - `questionNumber`: `Number`
+        - `answer`: `String`
+- **Relationships**: implicit test + user references via IDs.
+- **Constraints**: unique compound index on `{ testId, studentId }` (one submission per student per test).
 - **Timestamps**: enabled (`createdAt`, `updatedAt`).
 
 ## 10. Endpoints testing
@@ -430,6 +484,20 @@ All endpoints are mounted under `/api`.
 | PUT    | `/api/assignments/:id/submissions`  | Update student submission                               | Student       |
 | DELETE | `/api/assignments/submissions/:id`  | Delete submission                                       | Teacher/Admin |
 
+### Tests + Test Submissions
+
+| Method | Path                          | Purpose                                                               | Access        |
+|--------|-------------------------------|-----------------------------------------------------------------------|---------------|
+| GET    | `/api/tests`                  | List tests (role-filtered; students do not receive correct answers)   | Authenticated |
+| GET    | `/api/tests/:id`              | Get single test (students do not receive correct answers)             | Authenticated |
+| POST   | `/api/tests`                  | Create test                                                           | Teacher/Admin |
+| PUT    | `/api/tests/:id`              | Update test                                                           | Teacher/Admin |
+| DELETE | `/api/tests/:id`              | Delete test (+ cascade test-submission delete)                        | Teacher/Admin |
+| GET    | `/api/tests/:id/submissions/` | List test submissions (role-filtered; includes computed score fields) | Authenticated |
+| POST   | `/api/tests/:id/submissions`  | Create test submission                                                | Student       |
+| PUT    | `/api/tests/:id/submissions`  | Update own test submission                                            | Student       |
+| DELETE | `/api/tests/:id/submissions`  | Delete own test submission (teacher/admin route guard)                | Teacher/Admin |
+
 ### Preferences
 
 | Method | Path                     | Purpose                   | Access        | Body                     |
@@ -450,6 +518,12 @@ All endpoints are mounted under `/api`.
 | Method | Path                   | Purpose                                                    | Access |
 |--------|------------------------|------------------------------------------------------------|--------|
 | GET    | `/api/admin/statistic` | Platform statistic (users/modules/assignments/submissions) | Admin  |
+
+### Graphs
+
+| Method | Path                | Purpose                                  | Access |
+|--------|---------------------|------------------------------------------|--------|
+| GET    | `/api/graphs/stats` | Return global stats used by graph widgets | Public |
 
 ## 12. Request / Response Models
 
@@ -512,9 +586,65 @@ Admin-create-user request:
 }
 ```
 
-### Update Submission (`PUT /api/:id/submissions`)
+### Update Submission (`PUT /api/assignments/:id/submissions`)
 
-### Delete Submission (`DELETE /api/submissions/:id`) 
+Request body:
+
+```json
+{
+  "content": "Updated answer text."
+}
+```
+
+Success response (`200`):
+
+```json
+{
+  "_id": "66123456789abcdef0123ff",
+  "assignmentId": "66123456789abcdef012345",
+  "studentId": "66123456789abcdef012346",
+  "content": "Updated answer text.",
+  "createdAt": "2026-04-01T10:00:00.000Z",
+  "updatedAt": "2026-04-01T10:05:00.000Z"
+}
+```
+
+Common errors:
+- `400` when `content` is missing/invalid
+- `404` when assignment or submission does not exist
+- `403` when role is not `student`
+
+### Delete Submission (`DELETE /api/assignments/submissions/:id`)
+
+Success response (`200`):
+
+```json
+{
+  "message": "Submission deleted"
+}
+```
+
+### Delete Submission (legacy path) (`DELETE /api/assignments/submissions/:id`)
+Path params:
+
+```json
+{
+  "id": "66123456789abcdef0123ff"
+}
+```
+
+Success response (`200`):
+
+```json
+{
+  "message": "Submission deleted"
+}
+```
+
+Common errors:
+- `400` when `id` is not a valid Mongo ObjectId
+- `404` when submission does not exist
+- `403` when role is not teacher/admin
 
 ### Admin Role Update (`PUT /api/users/:id`)
 
@@ -565,12 +695,25 @@ Example response shape for updated user:
 Contribution
 - Project setup and DB connection (docker) - `Roman Polishcuk`
 - Registration, authentication (JWT + Session), authorization - `Roman Polishchuk`
+- API preferences - `Roman Polishchuk`
+- Automatic Tests (jest + supertest) - `Roman Polishchuk`
 - API assignments + submitions - `Stanislav Kril, Roman Polishchuk`
+- DB seeding - `Stanislav Kril, Roman Polishchuk`
 - API modules - `Kornii Kuvaldin`
 - API users - `Kornii Kuvaldin`
-- API preferences - `Roman Polishchuk`
+- API graphs - `Kornii Kuvaldin`
 - API calandar - `Stanislav Kril`
-- DB seeding - `Stanislav Kril, Roman Polishchuk`
 - Manual Tests (Bruno) - `Stanislav Kril`
-- Automatic Tests (jest + supertest) - `Roman Polishchuk`
 - Documantation (Readme.md) - `Stanislav Kril`
+- Database Migratrion (Docker -> MongoDB Atlas) -`Stanislav Kril`
+- Project host (render.com) -`Stanislav Kril`
+
+## 15. Project Deployment
+Backend hosted at render.com and can be accessible by link:
+```link
+https://threeyear-moodle-backend.onrender.com
+```
+
+## 16. Reference
+- https://www.albertgao.com/2017/05/24/how-to-test-expressjs-with-jest-and-supertest/
+- https://www.youtube.com/watch?v=FKnzS_icp20
