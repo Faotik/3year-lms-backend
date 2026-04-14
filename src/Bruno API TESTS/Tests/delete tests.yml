@@ -1,11 +1,11 @@
 info:
-  name: 4. Get newly created assignment specificaly
+  name: delete tests
   type: http
   seq: 4
 
 http:
-  method: GET
-  url: "{{baseUrl}}/assignments/69dd87d6e15a1e7a5d5e0f8c"
+  method: DELETE
+  url: "{{baseUrl}}/tests/69dd9e7d4dd3a9decae4c790"
   auth: inherit
 
 settings:

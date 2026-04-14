@@ -231,37 +231,31 @@ router.delete('/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
 // Get all submission
 router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
     try {
-        let submissions;
+        const test = await Test.findById(req.params.id);
+        if (!test) {
+            return res.status(404).json({ error: 'Test not found' });
+        }
+
+        let submissions = [];
 
         if (req.user.role === ROLES.ADMIN) {
-            const test = await Test.findById(req.params.id);
-            if (!test) {
-                return res.status(404).json({ error: 'Test not found' });
-            }
-
-            // Retrieve all submissions from specific Test
             submissions = await TestSubmission.find({
                 testId: req.params.id
             });
         }
         else if (req.user.role === ROLES.STUDENT) {
-            submission = await TestSubmission.findOne({
+            const studentSubmission = await TestSubmission.findOne({
                 testId: req.params.id,
                 studentId: req.user.id
             });
+            submissions = studentSubmission ? [studentSubmission] : [];
 
         } else if (req.user.role === ROLES.TEACHER) {
-            const test = await Test.findById(req.params.id);
-            if (!test) {
-                return res.status(404).json({ error: 'Test not found' });
-            }
-
             const module = await Module.findById(test.moduleId);
-            if (!module.users.some(id => id.equals(req.user.id)) && req.user.role !== ROLES.ADMIN) {
+            if (!module || !module.users.some(id => id.equals(req.user.id))) {
                 return res.status(403).json({ message: "Access forbidden" });
             }
 
-            // Retrieve all submissions from specific Test
             submissions = await TestSubmission.find({
                 testId: req.params.id
             });
@@ -270,20 +264,26 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
             return res.status(403).json({ error: 'Access forbidden' });
         }
 
-        let result;
-        for (submission of submissions) {
-            let score;
-            let maxScore;
-            const test = await Test.findById(req.params.id);
+        const result = [];
+        for (const submission of submissions) {
+            let score = 0;
+            let maxScore = 0;
 
-            for (answers of submission.questions) {
-                if (test.questions[answers.questionNumber].correctAnswer === answers.answer) {
-                    score += test.questions[answers.questionNumber].marks;
+            for (const answer of submission.answers || []) {
+                const question = test.questions?.[answer.questionNumber];
+                if (!question) {
+                    continue;
                 }
-                maxScore += test.questions[answers.questionNumber].marks;
+
+                const marks = Number(question.marks) || 0;
+                maxScore += marks;
+
+                if (question.correctAnswer !== undefined && question.correctAnswer === answer.answer) {
+                    score += marks;
+                }
             }
             result.push({
-                ...submission,
+                ...submission.toObject(),
                 score,
                 maxScore
             });

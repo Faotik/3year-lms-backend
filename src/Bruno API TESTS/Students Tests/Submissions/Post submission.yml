@@ -1,16 +1,16 @@
 info:
-  name: 2. Submit via main assignments API
+  name: Post submission
   type: http
   seq: 2
 
 http:
-  method: POST
+  method: PUT
   url: "{{baseUrl}}/assignments/69dd87d6e15a1e7a5d5e0f8c/submissions"
   body:
     type: json
     data: |-
       {
-        "content": "Submission via POST /api/assignments/:id/submissions"
+        "content": "3nd submission"
       }
   auth: inherit
 
