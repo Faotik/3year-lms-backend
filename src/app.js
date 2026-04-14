@@ -13,6 +13,7 @@ const studentDashboard = require('./routes/studentDashboard');
 const teacherDashboard = require('./routes/teacherDashboard');
 const modulesRoutes = require('./routes/modules');
 const calendarRoutes = require('./routes/calendar');
+const testRoutes = require('./routes/tests');
 
 const app = express();
 
@@ -52,6 +53,8 @@ app.use('/api/teacher', teacherDashboard);
 
 app.use('/api/modules', modulesRoutes);
 app.use('/api/calendar', calendarRoutes);
+
+app.use('/api/tests', testRoutes);
 
 
 module.exports = app;
