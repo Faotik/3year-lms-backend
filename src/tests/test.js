@@ -10,9 +10,24 @@ const Assignment = require('../models/assignment');
 const Test = require('../models/classTest');
 const TestSubmission = require('../models/testSubmission');
 
+function getTestMongoUri() {
+    if (process.env.MONGODB_URI_TEST) {
+        return process.env.MONGODB_URI_TEST;
+    }
+
+    if (process.env.MONGODB_URI) {
+        const testDbName = process.env.DB_NAME_TEST || 'moodle_tests_db';
+        const atlasUrl = new URL(process.env.MONGODB_URI);
+        atlasUrl.pathname = `/${testDbName}`;
+        return atlasUrl.toString();
+    }
+
+    return `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME_TEST}?authSource=admin`;
+}
+
 //Connect to db
 beforeAll(async () => {
-    await mongoose.connect(`mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME_TEST}?authSource=admin`);
+    await mongoose.connect(getTestMongoUri());
 });
 
 

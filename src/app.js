@@ -21,6 +21,8 @@ app.use(cookieParser());
 
 const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
+const mongoUri = process.env.MONGODB_URI
+    || `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?authSource=admin`;
 
 let sessionConfig = session({
     secret: process.env.SESSION_SECRET,
@@ -34,7 +36,7 @@ let sessionConfig = session({
 });
 if (!process.env.TEST_ENV) {
     sessionConfig.store = new MongoStore({
-        mongoUrl: `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?authSource=admin`
+        mongoUrl: mongoUri
     })
 }
 app.use(sessionConfig);
