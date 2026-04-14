@@ -1,0 +1,38 @@
+info:
+  name: Create  test
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/tests/"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Changed tested title",
+        "description": "Covers week 1",
+        "moduleId": "69dd81eae8a0e846f5325f96",
+        "deadline": "2026-12-31T23:59:59.000Z",
+        "questions": [
+          {
+            "question": "What is 2 + 2?",
+            "options": ["3", "4", "5"],
+            "correctAnswer": "4",
+            "marks": 1
+          },
+          {
+            "question": "Capital of France?",
+            "options": ["Berlin", "Paris", "Madrid"],
+            "correctAnswer": "Paris",
+            "marks": 2
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

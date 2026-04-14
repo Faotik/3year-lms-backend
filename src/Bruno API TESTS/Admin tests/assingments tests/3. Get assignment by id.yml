@@ -1,0 +1,15 @@
+info:
+  name: 3. Get assignment by id
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{baseUrl}}/assignments/69dbd196aa372e0a3e5f429b"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
