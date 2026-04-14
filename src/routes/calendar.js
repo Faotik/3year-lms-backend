@@ -3,7 +3,7 @@ const router = express.Router();
 
 const Assignment = require('../models/assignment');
 
-const AuthMiddleware = require('../middlewares/auth');
+const authMiddleware = require('../middlewares/auth');
 const ROLES = require('../constants/roles');
 
 
@@ -16,10 +16,8 @@ const formatEvent = (assignment) => ({
     courseId: assignment.courseId
 });
 
-// TODO calendar endpoint completely broken -> infinite request load
-
 // ================= All Events =================
-router.get('/', AuthMiddleware, async (req, res) => {
+router.get('/', authMiddleware(), async (req, res) => {
     try {
         // Ensure user exists
         if (!req.user || !req.user.role) {
@@ -58,7 +56,7 @@ router.get('/', AuthMiddleware, async (req, res) => {
 
 
 // ================= Upcoming Events =================
-router.get('/upcoming', AuthMiddleware, async (req, res) => {
+router.get('/upcoming', authMiddleware(), async (req, res) => {
     try {
         if (!req.user || !req.user.role) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -103,7 +101,7 @@ router.get('/upcoming', AuthMiddleware, async (req, res) => {
 
 
 // ================= Events By Date =================
-router.get('/:date', AuthMiddleware, async (req, res) => {
+router.get('/:date', authMiddleware(), async (req, res) => {
     try {
         if (!req.user || !req.user.role) {
             return res.status(401).json({ error: 'Unauthorized' });
