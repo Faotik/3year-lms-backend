@@ -1,0 +1,24 @@
+info:
+  name: add submition
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/tests/69dd9be39cc358495ec6521d/submissions"
+  body:
+    type: json
+    data: |-
+      {
+        "answers": [
+          { "questionNumber": 0, "answer": "4" },
+          { "questionNumber": 1, "answer": "Paris" }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

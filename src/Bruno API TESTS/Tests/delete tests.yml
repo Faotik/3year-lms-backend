@@ -1,0 +1,15 @@
+info:
+  name: delete tests
+  type: http
+  seq: 4
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/tests/69dd9e7d4dd3a9decae4c790"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

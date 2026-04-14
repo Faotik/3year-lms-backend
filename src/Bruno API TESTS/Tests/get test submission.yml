@@ -1,11 +1,11 @@
 info:
-  name: 3. Get all assignments linked to module
+  name: get test submission
   type: http
-  seq: 3
+  seq: 5
 
 http:
   method: GET
-  url: "{{baseUrl}}/assignments/"
+  url: "{{baseUrl}}/tests/69dd9be39cc358495ec6521d/submissions"
   auth: inherit
 
 settings:
