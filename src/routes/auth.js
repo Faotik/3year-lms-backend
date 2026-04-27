@@ -29,5 +29,6 @@ router.post('/logout', authMiddleware(), async (req, res) => {
         res.status(200).json({ message: "Logout successful" });
     });
 });
+router.get('/me', authMiddleware(), (req, res) => res.json(req.session.user));
 
 module.exports = router;
