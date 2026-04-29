@@ -23,6 +23,11 @@ router.post('/login', async (req, res) => {
     }
 });
 
+router.get('/me', authMiddleware(), async (req, res) => {
+    res.status(200).json({ id: req.user.id, role: req.user.role });
+});
+
+
 router.post('/logout', authMiddleware(), async (req, res) => {
     //Logout
     req.session.destroy(() => {
