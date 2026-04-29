@@ -16,6 +16,9 @@ http:
   auth: inherit
 
 runtime:
+  variables:
+    - name: baseUrl
+      value: http://localhost:5000/api
   scripts:
     - type: after-response
       code: |-
