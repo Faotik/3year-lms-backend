@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const Module = require('../models/module');
 const Assignment = require('../models/assignment');
 const authMiddleware = require("../middlewares/auth");
+const Test = require('../models/classTest');
 const ROLES = require('../constants/roles');
 
 
@@ -74,6 +75,35 @@ router.get('/:id/assignments/', authMiddleware(), async (req, res) => {
         });
 
         res.json(assignments);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// GET all tests of the module
+router.get('/:id/tests/', authMiddleware(), async (req, res) => {
+    try {
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ error: 'Module not found' });
+        }
+
+        const module = await Module.findById(req.params.id);
+
+        if (!module) {
+            return res.status(404).json({ message: "Module not found" });
+        }
+
+        if (!module.users.includes(req.user.id) && req.user.role !== ROLES.ADMIN) {
+            return res.status(403).json({ message: "Access forbidden" });
+        }
+
+        const tests = await Test.find({
+            moduleId: { $in: module.id }
+        });
+
+        res.json(tests);
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Server error' });
