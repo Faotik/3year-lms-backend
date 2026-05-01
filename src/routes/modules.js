@@ -15,9 +15,9 @@ router.get('/', authMiddleware(), async (req, res) => {
         let modules = [];
 
         if (req.user.role === ROLES.ADMIN) {
-            modules = await Module.find().populate('users');
+            modules = await Module.find();
         } else {
-            modules = await Module.find({ users: req.user.id }).populate('users');
+            modules = await Module.find({ users: req.user.id });
         }
 
         res.json(modules);
