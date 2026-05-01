@@ -15,9 +15,9 @@ router.get('/', authMiddleware(), async (req, res) => {
         let modules = [];
 
         if (req.user.role === ROLES.ADMIN) {
-            modules = await Module.find();
+            modules = await Module.find().populate('users');
         } else {
-            modules = await Module.find({ users: req.user.id });
+            modules = await Module.find({ users: req.user.id }).populate('users');
         }
 
         res.json(modules);
@@ -113,18 +113,19 @@ router.get('/:id/tests/', authMiddleware(), async (req, res) => {
 // CREATE
 router.post('/', authMiddleware([ROLES.ADMIN]), async (req, res) => {
     try {
-        const { title, description } = req.body;
+        const { title, description, users } = req.body;
         if (!title) {
             return res.status(400).json({ message: "Title is required" });
         }
 
         const module = new Module({
             title,
-            description
+            description,
+            users
         });
 
         await module.save();
-        res.status(201).json({ title, description });
+        res.status(201).json({ title, description, users });
 
     } catch (err) {
         console.error(err);

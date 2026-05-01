@@ -8,9 +8,12 @@ const moduleSchema = new mongoose.Schema({
     description: {
         type: String
     },
-    users: {
-        type: [mongoose.Schema.Types.ObjectId],
-    },
+    users: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
+    ]
 })
 
 

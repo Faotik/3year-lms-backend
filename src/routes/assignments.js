@@ -218,7 +218,7 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
 
             const submissions = await Submission.find({
                 assignmentId: req.params.id
-            }).populate('studentId', 'name');;
+            }).populate('studentId', 'name');
 
             res.json(submissions);
         }
