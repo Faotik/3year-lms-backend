@@ -241,7 +241,7 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
         if (req.user.role === ROLES.ADMIN) {
             submissions = await TestSubmission.find({
                 testId: req.params.id
-            });
+            }).populate('studentId', 'name');
         }
         else if (req.user.role === ROLES.STUDENT) {
             const studentSubmission = await TestSubmission.findOne({
@@ -258,7 +258,7 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
 
             submissions = await TestSubmission.find({
                 testId: req.params.id
-            });
+            }).populate('studentId', 'name');
         }
         else {
             return res.status(403).json({ error: 'Access forbidden' });

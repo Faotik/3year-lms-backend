@@ -7,7 +7,8 @@ const testSubmissionSchema = new mongoose.Schema({
     },
     studentId: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true
+        required: true,
+        ref: 'User'
     },
     answers: [
         {
