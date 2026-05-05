@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const Assignment = require('../models/assignment');
-
+const Module = require('../models/module');
 const authMiddleware = require('../middlewares/auth');
 const ROLES = require('../constants/roles');
 
@@ -16,6 +16,11 @@ const formatEvent = (assignment) => ({
     courseId: assignment.courseId
 });
 
+const getEnrolledModuleIds = async (userId) => {
+    const modules = await Module.find({ users: userId }, '_id');
+    return modules.map((m) => m._id);
+};
+
 // ================= All Events =================
 router.get('/', authMiddleware(), async (req, res) => {
     try {
@@ -27,7 +32,11 @@ router.get('/', authMiddleware(), async (req, res) => {
         let assignments;
 
         if (req.user.role === ROLES.STUDENT) {
-            assignments = await Assignment.find({}, 'title description deadline courseId');
+            const moduleIds = await getEnrolledModuleIds(req.user.id);
+            assignments = await Assignment.find(
+                { moduleId: { $in: moduleIds } },
+                'title description deadline courseId'
+            );
         }
         else if (req.user.role === ROLES.TEACHER) {
             assignments = await Assignment.find(
@@ -67,8 +76,9 @@ router.get('/upcoming', authMiddleware(), async (req, res) => {
         let assignments;
 
         if (req.user.role === ROLES.STUDENT) {
+            const moduleIds = await getEnrolledModuleIds(req.user.id);
             assignments = await Assignment.find(
-                { deadline: { $gte: now } },
+                { moduleId: { $in: moduleIds }, deadline: { $gte: now } },
                 'title description deadline courseId'
             );
         }
@@ -126,8 +136,9 @@ router.get('/:date', authMiddleware(), async (req, res) => {
         let assignments;
 
         if (req.user.role === ROLES.STUDENT) {
+            const moduleIds = await getEnrolledModuleIds(req.user.id);
             assignments = await Assignment.find(
-                { deadline: { $gte: start, $lte: end } },
+                { moduleId: { $in: moduleIds }, deadline: { $gte: start, $lte: end } },
                 'title description deadline courseId'
             );
         }
