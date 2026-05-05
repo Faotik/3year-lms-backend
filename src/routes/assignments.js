@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const path = require('path');
 
 const Assignment = require('../models/assignment');
 const Submission = require('../models/submission');
 const Module = require('../models/module');
 const authMiddleware = require("../middlewares/auth");
 const ROLES = require('../constants/roles');
+const upload = require('../middlewares/upload');
 
 // ============ ASSIGNMENTS ============
 // Get all assignments
@@ -204,9 +206,7 @@ router.delete('/:id', authMiddleware([ROLES.TEACHER]), async (req, res) => {
 
 // ================= SUBMISSIONS =================
 
-
-
-// Get all submission
+// Get all submissions
 router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
     try {
         if (req.user.role === ROLES.ADMIN) {
@@ -256,8 +256,54 @@ router.get('/:id/submissions/', authMiddleware(), async (req, res) => {
     }
 });
 
+// Get submission attachment
+router.get('/submissions/:id/attachment', authMiddleware(), async (req, res) => {
+    try {
+        if (req.user.role === ROLES.ADMIN) {
+            const submission = await Submission.findById(req.params.id);
+
+            const absolutePath = path.join(__dirname, '..', '..', submission.attachmentPath);
+            return res.download(absolutePath, "attachment");
+        }
+        else if (req.user.role === ROLES.STUDENT) {
+            const submission = await Submission.findOne({
+                _id: req.params.id,
+                studentId: req.user.id
+            });
+
+            if (submission) {
+                const absolutePath = path.join(__dirname, '..', '..', submission.attachmentPath);
+                return res.download(absolutePath, "attachment");
+            }
+            else {
+                return res.status(403).json({ message: "Access forbidden" });
+            }
+
+        } else if (req.user.role === ROLES.TEACHER) {
+            const submission = await Submission.findById(req.params.id);
+
+            const assignment = await Assignment.findById(submission.assignmentId._id);
+
+            const module = await Module.findById(assignment.moduleId);
+            if (!module.users.some(id => id.equals(req.user.id))) {
+                return res.status(403).json({ message: "Access forbidden" });
+            }
+
+            const absolutePath = path.join(__dirname, '..', '..', submission.attachmentPath);
+            return res.download(absolutePath, "attachment");
+        }
+        else {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Submit assignment (student)
-router.post('/:id/submissions', authMiddleware(), async (req, res) => {
+router.post('/:id/submissions', authMiddleware(), upload.single('attachment'), async (req, res) => {
     try {
         // Role validation
         if (req.user.role !== ROLES.STUDENT) {
@@ -265,10 +311,6 @@ router.post('/:id/submissions', authMiddleware(), async (req, res) => {
         }
 
         const { content } = req.body;
-
-        if (!content) {
-            return res.status(400).json({ error: 'Content required' });
-        }
 
         // Get targeted Assignment module
         const assignment = await Assignment.findById(req.params.id);
@@ -287,7 +329,8 @@ router.post('/:id/submissions', authMiddleware(), async (req, res) => {
         const submission = await Submission.create({
             assignmentId: req.params.id,
             studentId: req.user.id,
-            content
+            content,
+            attachmentPath: req.file.path
         });
 
         // Return newly created object to user
