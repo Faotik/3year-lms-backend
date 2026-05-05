@@ -16,7 +16,8 @@
     "express": "^4.16.1",
     "express-session": "^1.19.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.3.1"
+    "mongoose": "^9.3.1",
+    "multer": "^2.1.1"
   },
   "devDependencies": {
     "dotenv": "^17.3.1",
