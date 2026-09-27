@@ -19,9 +19,6 @@ role-based access for students, teachers, and admins.
 - [11. API Endpoints](#11-api-endpoints)
 - [12. Request / Response Models](#12-request--response-models)
 - [13. Security & Validation](#13-security--validation)
-- [14. Team Contributions](#14-team-contributions)
-- [15. Project Deployment](#15-project-deployment)
-- [16. Reference](#16-reference)
 
 ## 2. Project Overview
 
